@@ -1,8 +1,7 @@
 
 # 📗 CONTRIBUTING.md (developer-oriented)
 
-```markdown
-# Contributing to Mermaid for To-Dos
+# Contributing to Kelpie
 
 Thanks for contributing! 🙌 This document covers everything you need to set up the project for development, run tests, and follow our conventions.
 
