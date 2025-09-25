@@ -1,0 +1,20 @@
+# Lockfiles (keep only pnpm-lock.yaml tracked)
+package-lock.json
+yarn.lock
+bun.lock
+bun.lockb
+
+# Build outputs
+.build/
+build/
+dist/
+.svelte-kit/
+playwright-report/
+test-results/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Misc
+*.log

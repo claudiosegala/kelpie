@@ -1,0 +1,3 @@
+- [ ] Task A @due(2025-10-01)
+- [ ] Task B #fun
+- [x] Task C @done(2025-09-01)
