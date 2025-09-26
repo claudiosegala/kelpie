@@ -39,61 +39,55 @@
     };
 </script>
 
-<div class="app-shell" data-layout={layout} data-mode={viewMode}>
+<div
+    class="flex min-h-screen flex-col bg-base-200/80 text-base-content"
+    data-layout={layout}
+    data-mode={viewMode}
+>
     <Toolbar {version} />
-    <main class="panels" data-layout={layout}>
-        <section class="panel editor" aria-label={panelLabels.editor} hidden={!showEditor}>
-            <slot name="editor" />
+    <main
+        class={`grid flex-1 gap-4 p-4 transition-all duration-300 ${
+            layout === "desktop"
+                ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
+                : "grid-cols-1"
+        }`}
+        data-layout={layout}
+    >
+        <section
+            class={`card h-full overflow-hidden border border-base-300/60 bg-base-100 shadow-sm transition-all duration-300 ${
+                showEditor ? "opacity-100" : "opacity-0"
+            }`}
+            aria-label={panelLabels.editor}
+            hidden={!showEditor}
+            data-panel="editor"
+        >
+            <div class="card-body h-full gap-0 overflow-hidden p-0">
+                <slot name="editor" />
+            </div>
         </section>
-        <section class="panel preview" aria-label={panelLabels.preview} hidden={!showPreview}>
-            <slot name="preview" />
+        <section
+            class={`card h-full overflow-hidden border border-base-300/60 bg-base-100 shadow-sm transition-all duration-300 ${
+                showPreview ? "opacity-100" : "opacity-0"
+            }`}
+            aria-label={panelLabels.preview}
+            hidden={!showPreview}
+            data-panel="preview"
+        >
+            <div class="card-body h-full gap-0 overflow-hidden p-0">
+                <slot name="preview" />
+            </div>
         </section>
-        <section class="panel settings" aria-label={panelLabels.settings} hidden={!showSettings}>
-            <slot name="settings" />
+        <section
+            class={`card h-full overflow-hidden border border-base-300/60 bg-base-100 shadow-sm transition-all duration-300 ${
+                showSettings ? "opacity-100" : "opacity-0"
+            }`}
+            aria-label={panelLabels.settings}
+            hidden={!showSettings}
+            data-panel="settings"
+        >
+            <div class="card-body h-full gap-0 overflow-hidden p-0">
+                <slot name="settings" />
+            </div>
         </section>
     </main>
 </div>
-
-<style>
-    .app-shell {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-        background: var(--app-shell-bg, #f3f4f6);
-        color: var(--app-shell-fg, #111827);
-    }
-
-    .panels {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0;
-        overflow: hidden;
-    }
-
-    .panels[data-layout="desktop"] {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
-
-    .panel {
-        display: flex;
-        flex-direction: column;
-        background: #ffffff;
-        border-right: 1px solid #e5e7eb;
-        overflow: hidden;
-    }
-
-    .panel:last-child {
-        border-right: none;
-    }
-
-    .panel[hidden] {
-        display: none;
-    }
-
-    @media (max-width: 960px) {
-        .panels[data-layout="mobile"] {
-            grid-template-columns: minmax(0, 1fr);
-        }
-    }
-</style>
