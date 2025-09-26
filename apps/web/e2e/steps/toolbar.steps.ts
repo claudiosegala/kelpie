@@ -1,5 +1,12 @@
-import { expect } from "@playwright/test";
+import { expect, type Locator } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
+import {
+  TOOLBAR_BRAND_CLUSTER_CLASSES,
+  TOOLBAR_CONTROLS_CLUSTER_CLASSES,
+  TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES,
+  TOOLBAR_TEST_IDS,
+  TOOLBAR_WRAPPER_CLASSES
+} from "../../src/lib/app-shell/toolbar.constants";
 
 const { Given, When, Then } = createBdd();
 
@@ -8,6 +15,24 @@ const viewModeIds = new Map<string, string>([
   ["preview", "preview-only"],
   ["settings", "settings"]
 ]);
+
+async function expectLocatorHasClasses(locator: Locator, classes: string): Promise<void> {
+  const classList = await locator.getAttribute("class");
+  const actual = new Set(
+    (classList ?? "")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean)
+  );
+  const expected = classes
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  for (const className of expected) {
+    expect(actual.has(className)).toBe(true);
+  }
+}
 
 Then("the toolbar brand tooltip contains {string}", async ({ page }, expected: string) => {
   const tooltip = page.getByTestId("toolbar-brand-tooltip");
@@ -23,6 +48,38 @@ Then("the tooltip explains it is the markdown to-do studio", async ({ page }) =>
 
 Then("the toolbar displays the save indicator component", async ({ page }) => {
   await expect(page.getByTestId("save-indicator")).toBeVisible();
+});
+
+Then("the toolbar root uses the exported wrapper classes", async ({ page }) => {
+  const root = page.getByTestId(TOOLBAR_TEST_IDS.root);
+  await expect(root).toBeVisible();
+  await expectLocatorHasClasses(root, TOOLBAR_WRAPPER_CLASSES);
+});
+
+Then("the brand cluster test id is available for instrumentation", async ({ page }) => {
+  await expect(page.getByTestId(TOOLBAR_TEST_IDS.brandCluster)).toBeVisible();
+});
+
+Then("the controls cluster includes the save indicator wrapper and workspace controls", async ({ page }) => {
+  const controlsCluster = page.getByTestId(TOOLBAR_TEST_IDS.controlsCluster);
+  await expect(controlsCluster).toBeVisible();
+
+  const saveIndicatorWrapper = controlsCluster.getByTestId(TOOLBAR_TEST_IDS.saveIndicatorWrapper);
+  await expect(saveIndicatorWrapper).toBeVisible();
+  await expect(saveIndicatorWrapper.getByTestId("save-indicator")).toBeVisible();
+
+  await expect(page.getByRole("group", { name: "Select workspace mode" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Switch to (dark|light) theme/i })).toBeVisible();
+});
+
+Then("each cluster reuses the exported layout class tokens", async ({ page }) => {
+  const brandCluster = page.getByTestId(TOOLBAR_TEST_IDS.brandCluster);
+  const controlsCluster = page.getByTestId(TOOLBAR_TEST_IDS.controlsCluster);
+  const saveIndicatorWrapper = page.getByTestId(TOOLBAR_TEST_IDS.saveIndicatorWrapper);
+
+  await expectLocatorHasClasses(brandCluster, TOOLBAR_BRAND_CLUSTER_CLASSES);
+  await expectLocatorHasClasses(controlsCluster, TOOLBAR_CONTROLS_CLUSTER_CLASSES);
+  await expectLocatorHasClasses(saveIndicatorWrapper, TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES);
 });
 
 Then("the save indicator announces updates politely", async ({ page }) => {
@@ -74,4 +131,8 @@ Then("the panel toggle group is hidden", async ({ page }) => {
     return;
   }
   await expect(group).toBeHidden();
+});
+
+Then("the panel toggle group is hidden from the DOM", async ({ page }) => {
+  await expect(page.getByTestId("panel-toggle-group")).toHaveCount(0);
 });
