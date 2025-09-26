@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createLocalStorageDriver } from "./driver";
+import { createLocalStorageDriver, StorageDriverQuotaError } from "./driver";
+import * as environment from "./environment";
 import { STORAGE_LOG_PREFIX } from "./logging";
 import type { StorageSnapshot } from "./types";
 
@@ -59,26 +60,57 @@ describe("createLocalStorageDriver", () => {
     expect(driver.load()).toEqual(SAMPLE_SNAPSHOT);
   });
 
-  it("re-throws when the stored payload cannot be parsed", () => {
-    const driver = createLocalStorageDriver(STORAGE_KEY);
+  it("invokes corruption handling when the stored payload cannot be parsed", () => {
+    const now = () => "2024-05-01T12:00:00.000Z";
+    const driver = createLocalStorageDriver(STORAGE_KEY, { now });
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    globalThis.localStorage.setItem(STORAGE_KEY, "not-json");
+    const corruption = vi.fn();
+    const rawPayload = "not-json";
+    globalThis.localStorage.setItem(STORAGE_KEY, rawPayload);
 
-    expect(() => driver.load()).toThrow(SyntaxError);
-    expect(warnSpy).toHaveBeenCalledWith(`${STORAGE_LOG_PREFIX}: failed to parse snapshot`, expect.any(SyntaxError));
+    expect(driver.load({ onCorruption: corruption })).toBeNull();
+    expect(corruption).toHaveBeenCalledTimes(1);
+    expect(corruption.mock.calls[0][0]).toMatchObject({ reason: "parse" });
+    expect(warnSpy).toHaveBeenCalledWith(
+      `${STORAGE_LOG_PREFIX}: storage snapshot corruption detected (parse)`,
+      expect.any(SyntaxError)
+    );
+
+    const backupKey = `${STORAGE_KEY}.backup.${now().replace(/[:.]/g, "-")}`;
+    expect(globalThis.localStorage.getItem(backupKey)).toBe(rawPayload);
   });
 
-  it("no-ops when localStorage is unavailable", () => {
+  it("invokes corruption handling when checksum mismatches", () => {
+    const now = () => "2024-05-02T15:30:00.000Z";
+    const driver = createLocalStorageDriver(STORAGE_KEY, { now });
+    driver.save(SAMPLE_SNAPSHOT);
+
+    const tampered = { ...SAMPLE_SNAPSHOT, meta: { ...SAMPLE_SNAPSHOT.meta, installationId: "tampered" } };
+    globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(tampered));
+    globalThis.localStorage.setItem(`${STORAGE_KEY}.checksum`, "invalid-checksum");
+
+    const corruption = vi.fn();
+    expect(driver.load({ onCorruption: corruption })).toBeNull();
+    expect(corruption).toHaveBeenCalledTimes(1);
+    expect(corruption.mock.calls[0][0]).toMatchObject({ reason: "checksum" });
+
+    const backupKey = `${STORAGE_KEY}.backup.${now().replace(/[:.]/g, "-")}`;
+    expect(globalThis.localStorage.getItem(backupKey)).toContain("tampered");
+  });
+
+  it("persists and reads snapshots when localStorage is unavailable", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("localStorage", undefined);
     const driver = createLocalStorageDriver(STORAGE_KEY);
 
     expect(driver.load()).toBeNull();
 
-    expect(() => driver.save(SAMPLE_SNAPSHOT)).not.toThrow();
-    expect(() => driver.clear()).not.toThrow();
+    driver.save(SAMPLE_SNAPSHOT);
+    expect(driver.load()).toEqual(SAMPLE_SNAPSHOT);
 
-    expect(warnSpy).toHaveBeenCalledTimes(3);
+    driver.clear();
+    expect(driver.load()).toBeNull();
+
     expect(warnSpy).toHaveBeenCalledWith(`${STORAGE_LOG_PREFIX}: localStorage is not available`);
   });
 
@@ -120,5 +152,45 @@ describe("createLocalStorageDriver", () => {
     if (originalWindow) {
       vi.stubGlobal("window", originalWindow);
     }
+  });
+
+  it("skips redundant writes when the snapshot is unchanged", () => {
+    const setItem = vi.spyOn(globalThis.localStorage, "setItem");
+    const driver = createLocalStorageDriver(STORAGE_KEY);
+
+    driver.save(SAMPLE_SNAPSHOT);
+    const callsAfterFirstWrite = setItem.mock.calls.length;
+
+    driver.save(SAMPLE_SNAPSHOT);
+
+    expect(setItem.mock.calls.length).toBe(callsAfterFirstWrite);
+  });
+
+  it("wraps quota errors in a StorageDriverQuotaError", () => {
+    const quotaError = new DOMException("Quota exceeded", "QuotaExceededError");
+    const storageMock: Storage = {
+      length: 0,
+      clear: vi.fn(),
+      getItem: vi.fn().mockReturnValue(null),
+      key: vi.fn(),
+      removeItem: vi.fn(),
+      setItem: vi.fn(() => {
+        throw quotaError;
+      })
+    };
+    const getLocalStorageSpy = vi.spyOn(environment, "getLocalStorage").mockReturnValue(storageMock);
+
+    const driver = createLocalStorageDriver(STORAGE_KEY);
+
+    let thrown: unknown;
+    try {
+      driver.save(SAMPLE_SNAPSHOT);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(StorageDriverQuotaError);
+
+    getLocalStorageSpy.mockRestore();
   });
 });

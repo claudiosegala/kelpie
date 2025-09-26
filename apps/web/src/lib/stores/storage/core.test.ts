@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createStorageCore } from "./core";
 import { createDefaultConfiguration } from "./defaults";
+import { StorageCorruptionError } from "./driver";
 import type { StorageDriver } from "./driver";
 import type { StorageSnapshot } from "./types";
 import { registerMigrationForTesting } from "./migrations";
@@ -87,6 +88,28 @@ describe("createStorageCore", () => {
     expect(loadSpy).toHaveBeenCalledTimes(2);
     expect(core.getState().snapshot).toEqual(refreshedSnapshot);
     expect(core.getState().settings).toEqual(refreshedSnapshot.settings);
+  });
+
+  it("falls back to defaults and audits when the driver reports corruption", () => {
+    const now = () => "2024-06-01T00:00:00.000Z";
+    const corruption = new StorageCorruptionError("parse", "bad payload", "broken");
+
+    loadSpy.mockImplementation((options?: Parameters<StorageDriver["load"]>[0]) => {
+      options?.onCorruption?.(corruption);
+      return null;
+    });
+
+    const core = createStorageCore({ driver, now });
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    const persisted = saveSpy.mock.calls[0]![0] as StorageSnapshot;
+    expect(persisted.audit.at(-1)).toMatchObject({
+      type: "storage.corruption",
+      createdAt: now(),
+      metadata: { reason: "parse" }
+    });
+
+    expect(core.getState().snapshot).toEqual(persisted);
   });
 
   it("updates state when the driver notifies of external changes", () => {
