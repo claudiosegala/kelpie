@@ -152,7 +152,9 @@ describe("createStorageEngine", () => {
           scope: "document",
           refId: "doc-123",
           snapshot: {},
-          createdAt: "2024-01-02T00:00:00.000Z"
+          createdAt: "2024-01-02T00:00:00.000Z",
+          origin: "api",
+          sequence: 1
         }
       ],
       audit: [
@@ -399,5 +401,152 @@ describe("createStorageEngine", () => {
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(get(engine.config)).toEqual(createDefaultConfiguration());
+  });
+
+  it("captures and prunes history entries via the history controller", () => {
+    const baseline = createSnapshot({
+      config: {
+        ...createSnapshot().config,
+        historyEntryCap: 2,
+        historyRetentionDays: 1,
+        debounce: { writeMs: 500, broadcastMs: 200 },
+        auditEntryCap: 20,
+        softDeleteRetentionDays: 7
+      },
+      index: [
+        {
+          id: "doc-123",
+          title: "Doc",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+          deletedAt: null,
+          purgeAfter: null
+        }
+      ],
+      documents: {
+        "doc-123": {
+          id: "doc-123",
+          title: "Doc",
+          content: "Hello",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z"
+        }
+      },
+      history: [
+        {
+          id: "hist-1",
+          scope: "document",
+          refId: "doc-123",
+          snapshot: { title: "Doc", content: "Hello" },
+          createdAt: "2024-01-01T00:00:00.000Z",
+          origin: "api",
+          sequence: 1
+        }
+      ]
+    });
+
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver, now: () => "2024-01-03T00:00:00.000Z" });
+
+    const result = engine.history.capture({
+      scope: "document",
+      refId: "doc-123",
+      snapshot: { title: "Doc", content: "Updated" },
+      origin: "toolbar"
+    });
+
+    expect(result.entry.origin).toBe("toolbar");
+    expect(result.entry.sequence).toBe(2);
+    expect(result.pruned).toHaveLength(1);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+
+    const snapshot = get(engine.snapshot);
+    expect(snapshot.history).toHaveLength(1);
+    expect(snapshot.history[0]?.origin).toBe("toolbar");
+    expect(snapshot.audit.at(-1)?.type).toBe("history.pruned");
+    expect(engine.history.timeline({ scope: "document", refId: "doc-123" }).cursor?.origin).toBe("toolbar");
+  });
+
+  it("maintains undo/redo stacks across snapshot updates", () => {
+    const baseline = createSnapshot({
+      index: [
+        {
+          id: "doc-123",
+          title: "Doc",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+          deletedAt: null,
+          purgeAfter: null
+        }
+      ],
+      documents: {
+        "doc-123": {
+          id: "doc-123",
+          title: "Doc",
+          content: "Current",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z"
+        }
+      },
+      history: [
+        {
+          id: "hist-1",
+          scope: "document",
+          refId: "doc-123",
+          snapshot: { title: "Doc", content: "Initial" },
+          createdAt: "2024-01-01T00:00:00.000Z",
+          origin: "api",
+          sequence: 1
+        },
+        {
+          id: "hist-2",
+          scope: "document",
+          refId: "doc-123",
+          snapshot: { title: "Doc", content: "Intermediate" },
+          createdAt: "2024-01-02T00:00:00.000Z",
+          origin: "keyboard",
+          sequence: 2
+        }
+      ]
+    });
+
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver, now: () => "2024-01-03T00:00:00.000Z" });
+
+    const undoEntry = engine.history.undo(
+      { scope: "document", refId: "doc-123" },
+      {
+        snapshot: { title: "Doc", content: "Current" },
+        origin: "toolbar"
+      }
+    );
+
+    expect(undoEntry?.id).toBe("hist-2");
+    const timelineAfterUndo = engine.history.timeline({ scope: "document", refId: "doc-123" });
+    expect(timelineAfterUndo.cursor?.id).toBe("hist-1");
+    expect(timelineAfterUndo.future).toHaveLength(1);
+
+    engine.update((snapshot) => {
+      const undoSnapshot = undoEntry?.snapshot as { content: string };
+      return {
+        ...snapshot,
+        documents: {
+          ...snapshot.documents,
+          "doc-123": {
+            ...snapshot.documents["doc-123"],
+            content: undoSnapshot.content
+          }
+        }
+      } satisfies StorageSnapshot;
+    });
+
+    const redoEntry = engine.history.redo({ scope: "document", refId: "doc-123" });
+    expect(redoEntry?.origin).toBe("toolbar");
+
+    const timelineAfterRedo = engine.history.timeline({ scope: "document", refId: "doc-123" });
+    expect(timelineAfterRedo.cursor?.id).toBe("hist-2");
+    expect(timelineAfterRedo.future).toHaveLength(0);
   });
 });
