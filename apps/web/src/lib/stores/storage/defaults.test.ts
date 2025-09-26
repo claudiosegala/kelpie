@@ -4,8 +4,11 @@ import {
   DEFAULT_AUDIT_ENTRY_CAP,
   DEFAULT_DEBOUNCE_BROADCAST_MS,
   DEFAULT_DEBOUNCE_WRITE_MS,
+  DEFAULT_GC_IDLE_TRIGGER_MS,
   DEFAULT_HISTORY_ENTRY_CAP,
   DEFAULT_HISTORY_RETENTION_DAYS,
+  DEFAULT_QUOTA_HARD_LIMIT_BYTES,
+  DEFAULT_QUOTA_WARNING_BYTES,
   DEFAULT_SOFT_DELETE_RETENTION_DAYS,
   STORAGE_SCHEMA_VERSION
 } from "./constants";
@@ -28,7 +31,10 @@ describe("storage defaults", () => {
       historyRetentionDays: DEFAULT_HISTORY_RETENTION_DAYS,
       historyEntryCap: DEFAULT_HISTORY_ENTRY_CAP,
       auditEntryCap: DEFAULT_AUDIT_ENTRY_CAP,
-      softDeleteRetentionDays: DEFAULT_SOFT_DELETE_RETENTION_DAYS
+      softDeleteRetentionDays: DEFAULT_SOFT_DELETE_RETENTION_DAYS,
+      quotaWarningBytes: DEFAULT_QUOTA_WARNING_BYTES,
+      quotaHardLimitBytes: DEFAULT_QUOTA_HARD_LIMIT_BYTES,
+      gcIdleTriggerMs: DEFAULT_GC_IDLE_TRIGGER_MS
     });
   });
 
@@ -61,7 +67,8 @@ describe("storage defaults", () => {
       version: STORAGE_SCHEMA_VERSION,
       installationId: "uuid-test-123",
       createdAt: now.toISOString(),
-      lastOpenedAt: now.toISOString()
+      lastOpenedAt: now.toISOString(),
+      approxSizeBytes: expect.any(Number)
     });
     expect(snapshot.config).toEqual(createDefaultConfiguration());
     expect(snapshot.settings).toEqual(createDefaultSettings());

@@ -11,14 +11,18 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
       version: 1,
       installationId: "test-installation",
       createdAt: "2024-01-01T00:00:00.000Z",
-      lastOpenedAt: "2024-01-01T00:00:00.000Z"
+      lastOpenedAt: "2024-01-01T00:00:00.000Z",
+      approxSizeBytes: 0
     },
     config: {
       debounce: { writeMs: 500, broadcastMs: 200 },
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
-      softDeleteRetentionDays: 7
+      softDeleteRetentionDays: 7,
+      quotaWarningBytes: 5_000,
+      quotaHardLimitBytes: 10_000,
+      gcIdleTriggerMs: 30_000
     },
     settings: {
       lastActiveDocumentId: null,
@@ -257,7 +261,9 @@ describe("createStorageCore", () => {
     const changed = core.update(() => updated);
 
     expect(changed).toBe(true);
-    expect(saveSpy).toHaveBeenCalledWith(updated);
+    const savedSnapshot = saveSpy.mock.calls.at(-1)?.[0] as StorageSnapshot;
+    expect(savedSnapshot.config).toEqual(updated.config);
+    expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
     expect(core.getState().config).toEqual(updated.config);
   });
 
@@ -280,8 +286,10 @@ describe("createStorageCore", () => {
 
     expect(changed).toBe(true);
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    expect(saveSpy).toHaveBeenCalledWith(updated);
-    expect(core.getState().snapshot).toEqual(updated);
+    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
+    expect(savedSnapshot.settings).toEqual(updated.settings);
+    expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
+    expect(core.getState().snapshot).toEqual(savedSnapshot);
     expect(core.getState().settings).toEqual(updated.settings);
     expect(broadcastSpy).toHaveBeenCalledTimes(1);
     expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {

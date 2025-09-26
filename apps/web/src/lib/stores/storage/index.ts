@@ -8,4 +8,6 @@ export * from "./audit";
 export * from "./history";
 export * from "./documents";
 export * from "./migrations";
+export * from "./garbage-collection";
+export * from "./size";
 export * from "./types";
