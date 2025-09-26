@@ -3,6 +3,7 @@
 <script lang="ts">
   import SaveIndicatorIcon from "./SaveIndicatorIcon.svelte";
   import { saveStatus } from "$lib/stores/persistence";
+  import { SaveStatusKind } from "$lib/app-shell/contracts";
   import type { SaveStatus } from "$lib/app-shell/contracts";
 
   const localSaveTooltip =
@@ -13,39 +14,43 @@
   type ToneClasses = { badge: string; icon: string };
 
   const toneByKind: Record<SaveStatus["kind"], ToneClasses> = {
-    idle: {
+    [SaveStatusKind.Idle]: {
       badge: "border-success/40 bg-success/10 text-success",
       icon: "text-success"
     },
-    saving: {
+    [SaveStatusKind.Saving]: {
       badge: "border-info/40 bg-info/10 text-info",
       icon: "text-info"
     },
-    saved: {
+    [SaveStatusKind.Saved]: {
       badge: "border-success/40 bg-success/10 text-success",
       icon: "text-success"
     },
-    error: {
+    [SaveStatusKind.Error]: {
       badge: "border-error/40 bg-error/10 text-error",
       icon: "text-error"
     }
   };
 
   const tooltipByKind: Record<SaveStatus["kind"], string> = {
-    idle: localSaveTooltip,
-    saving: localSaveTooltip,
-    saved: localSaveTooltip,
-    error: errorTooltip
+    [SaveStatusKind.Idle]: localSaveTooltip,
+    [SaveStatusKind.Saving]: localSaveTooltip,
+    [SaveStatusKind.Saved]: localSaveTooltip,
+    [SaveStatusKind.Error]: errorTooltip
   };
 
   $: status = $saveStatus;
   $: statusLabel = status.message;
-  $: tone = toneByKind[status.kind] ?? toneByKind.saved;
-  $: lastSavedAt = status.timestamp && status.kind === "saved" ? new Date(status.timestamp) : undefined;
+  $: tone = toneByKind[status.kind] ?? toneByKind[SaveStatusKind.Saved];
+  $: lastSavedAt = status.timestamp && status.kind === SaveStatusKind.Saved ? new Date(status.timestamp) : undefined;
   $: formattedTimestamp = lastSavedAt?.toLocaleTimeString();
   $: tooltipBase = tooltipByKind[status.kind] ?? localSaveTooltip;
   $: tooltipMessage = formattedTimestamp ? `${tooltipBase}\nLast saved at ${formattedTimestamp}.` : tooltipBase;
-  $: badgeClasses = ["indicator", tone.badge, status.kind === "saving" ? "indicator--saving animate-pulse" : ""]
+  $: badgeClasses = [
+    "indicator",
+    tone.badge,
+    status.kind === SaveStatusKind.Saving ? "indicator--saving animate-pulse" : ""
+  ]
     .filter(Boolean)
     .join(" ");
 </script>

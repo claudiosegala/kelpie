@@ -1,17 +1,18 @@
 <svelte:options runes={false} />
 
 <script lang="ts">
+  import { SaveStatusKind } from "$lib/app-shell/contracts";
   import type { SaveStatus } from "$lib/app-shell/contracts";
 
   export let kind: SaveStatus["kind"];
   export let toneClass: string;
 
-  $: iconClasses = ["indicator__icon", toneClass, kind === "saving" ? "indicator__icon--saving" : ""]
+  $: iconClasses = ["indicator__icon", toneClass, kind === SaveStatusKind.Saving ? "indicator__icon--saving" : ""]
     .filter(Boolean)
     .join(" ");
 </script>
 
-{#if kind === "error"}
+{#if kind === SaveStatusKind.Error}
   <svg
     class={iconClasses}
     viewBox="0 0 24 24"
@@ -26,7 +27,7 @@
     <path d="M12 10.5v4.5"></path>
     <path d="M12 17.25h.008"></path>
   </svg>
-{:else if kind === "saving"}
+{:else if kind === SaveStatusKind.Saving}
   <svg
     class={iconClasses}
     viewBox="0 0 24 24"

@@ -2,7 +2,11 @@
  * Types describing the contracts between the app shell and its child panels.
  * These mirror the responsibilities outlined in `specs/app-web-shell.spec.md`.
  */
-export type PanelId = "editor" | "preview" | "settings";
+export enum PanelId {
+  Editor = "editor",
+  Preview = "preview",
+  Settings = "settings"
+}
 
 /**
  * The layout mode currently selected by the user.
@@ -19,15 +23,23 @@ export enum ViewMode {
 /**
  * Shell layout state derived from viewport size.
  */
-export type ShellLayout = "desktop" | "mobile";
+export enum ShellLayout {
+  Desktop = "desktop",
+  Mobile = "mobile"
+}
 
-export type SaveStatusKind = "idle" | "saving" | "saved" | "error";
+export enum SaveStatusKind {
+  Idle = "idle",
+  Saving = "saving",
+  Saved = "saved",
+  Error = "error"
+}
 
 export type SaveStatus =
-  | { kind: "idle"; message: "Saved locally \u2713"; timestamp: number | null }
-  | { kind: "saving"; message: "Saving locally\u2026"; timestamp: number }
-  | { kind: "saved"; message: "Saved locally \u2713"; timestamp: number }
-  | { kind: "error"; message: string; timestamp: number };
+  | { kind: SaveStatusKind.Idle; message: "Saved locally \u2713"; timestamp: number | null }
+  | { kind: SaveStatusKind.Saving; message: "Saving locally\u2026"; timestamp: number }
+  | { kind: SaveStatusKind.Saved; message: "Saved locally \u2713"; timestamp: number }
+  | { kind: SaveStatusKind.Error; message: string; timestamp: number };
 
 export type ShellState = {
   layout: ShellLayout;
@@ -40,17 +52,17 @@ export type ShellState = {
 };
 
 export function defaultPanelForMode(mode: ViewMode): PanelId {
-  if (mode === ViewMode.Settings) return "settings";
-  if (mode === ViewMode.PreviewOnly) return "preview";
-  return "editor";
+  if (mode === ViewMode.Settings) return PanelId.Settings;
+  if (mode === ViewMode.PreviewOnly) return PanelId.Preview;
+  return PanelId.Editor;
 }
 
 export function isPanelAllowedInMode(panel: PanelId, mode: ViewMode): boolean {
   if (mode === ViewMode.Settings) {
-    return panel === "settings";
+    return panel === PanelId.Settings;
   }
   if (mode === ViewMode.PreviewOnly) {
-    return panel === "preview";
+    return panel === PanelId.Preview;
   }
-  return panel === "editor" || panel === "preview";
+  return panel === PanelId.Editor || panel === PanelId.Preview;
 }

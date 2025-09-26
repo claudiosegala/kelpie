@@ -1,7 +1,7 @@
 import { readable, writable } from "svelte/store";
 import {
-  type PanelId,
-  type ShellLayout,
+  PanelId,
+  ShellLayout,
   type ShellState,
   ViewMode,
   defaultPanelForMode,
@@ -9,9 +9,9 @@ import {
 } from "$lib/app-shell/contracts";
 
 const initialState: ShellState = {
-  layout: "desktop",
+  layout: ShellLayout.Desktop,
   viewMode: ViewMode.EditorPreview,
-  activePanel: "editor"
+  activePanel: PanelId.Editor
 };
 
 const shellStateStore = writable<ShellState>(initialState);
@@ -22,7 +22,7 @@ export const shellState = readable<ShellState>(initialState, (set) => {
 });
 
 export function setLayout(layout: ShellLayout): void {
-  const normalized: ShellLayout = layout === "mobile" ? "mobile" : "desktop";
+  const normalized: ShellLayout = layout === ShellLayout.Mobile ? ShellLayout.Mobile : ShellLayout.Desktop;
   shellStateStore.update((state) => {
     if (state.layout === normalized) return state;
     return { ...state, layout: normalized } satisfies ShellState;
@@ -49,7 +49,7 @@ export function activatePanel(panel: PanelId): void {
 
 export function startLayoutWatcher(query = "(max-width: 960px)"): () => void {
   const mediaQuery = window.matchMedia(query);
-  const update = () => setLayout(mediaQuery.matches ? "mobile" : "desktop");
+  const update = () => setLayout(mediaQuery.matches ? ShellLayout.Mobile : ShellLayout.Desktop);
   update();
   mediaQuery.addEventListener("change", update);
   return () => mediaQuery.removeEventListener("change", update);

@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
-import type { SaveStatusKind } from "../../src/lib/app-shell/contracts";
+import { SaveStatusKind } from "../../src/lib/app-shell/contracts";
 
 const { Given, When, Then } = createBdd();
 
@@ -15,7 +15,7 @@ const SAVE_INDICATOR_TOOLTIP_TEST_ID = "save-indicator-tooltip";
 const SAVE_INDICATOR_LABEL_TEST_ID = "save-indicator-label";
 const SAVE_INDICATOR_TIMESTAMP_TEST_ID = "save-indicator-timestamp";
 
-let currentSaveStatusKind: SaveStatusKind = "idle";
+let currentSaveStatusKind: SaveStatusKind = SaveStatusKind.Idle;
 let lastTimestampIso: string | null = null;
 
 function indicatorLocator(page: Page) {
@@ -58,14 +58,14 @@ async function loadAppShell(page: Page): Promise<void> {
   await page.reload();
   await page.waitForLoadState("networkidle");
   await expect(indicatorLocator(page)).toBeVisible();
-  currentSaveStatusKind = "idle";
+  currentSaveStatusKind = SaveStatusKind.Idle;
   lastTimestampIso = null;
 }
 
 async function setSaveStatus(page: Page, update: SaveStatusUpdate): Promise<void> {
   currentSaveStatusKind = update.kind;
   await page.evaluate(
-    ([kind, message, timestamp]) => {
+    ([kind, message, timestamp, enums]) => {
       const setter = (globalThis as { __kelpieSetSaveStatus?: (status: unknown) => void }).__kelpieSetSaveStatus;
 
       if (typeof setter !== "function") {
@@ -88,24 +88,26 @@ async function setSaveStatus(page: Page, update: SaveStatusUpdate): Promise<void
 
       const baseTimestamp = resolveTimestamp();
 
-      if (kind === "saving") {
-        setter({ kind: "saving", message: message ?? "Saving locally…", timestamp: baseTimestamp ?? Date.now() });
+      const { Idle, Saving, Saved, Error } = enums as typeof SaveStatusKind;
+
+      if (kind === Saving) {
+        setter({ kind: Saving, message: message ?? "Saving locally…", timestamp: baseTimestamp ?? Date.now() });
         return;
       }
 
-      if (kind === "saved") {
-        setter({ kind: "saved", message: message ?? "Saved locally ✓", timestamp: baseTimestamp ?? Date.now() });
+      if (kind === Saved) {
+        setter({ kind: Saved, message: message ?? "Saved locally ✓", timestamp: baseTimestamp ?? Date.now() });
         return;
       }
 
-      if (kind === "error") {
-        setter({ kind: "error", message: message ?? "Failed to save locally", timestamp: baseTimestamp ?? Date.now() });
+      if (kind === Error) {
+        setter({ kind: Error, message: message ?? "Failed to save locally", timestamp: baseTimestamp ?? Date.now() });
         return;
       }
 
-      setter({ kind: "idle", message: message ?? "Saved locally ✓", timestamp: baseTimestamp });
+      setter({ kind: Idle, message: message ?? "Saved locally ✓", timestamp: baseTimestamp });
     },
-    [update.kind, update.message ?? null, update.timestamp ?? null]
+    [update.kind, update.message ?? null, update.timestamp ?? null, SaveStatusKind]
   );
 }
 
@@ -129,7 +131,7 @@ Then("it reports the info tone styling", async ({ page }) => {
   const indicator = indicatorLocator(page);
   const badge = badgeLocator(page);
 
-  await expect(indicator).toHaveAttribute("data-kind", "saving");
+  await expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Saving);
 
   await expectClasses(indicator, ["text-info", "border-info/60", "bg-info/10"]);
   await expectClasses(badge, ["border-info/40", "bg-info/20", "text-info/90", "animate-pulse"]);

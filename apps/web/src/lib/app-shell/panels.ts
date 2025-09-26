@@ -1,7 +1,7 @@
 import EditorIcon from "$lib/components/icons/EditorIcon.svelte";
 import PreviewIcon from "$lib/components/icons/PreviewIcon.svelte";
 import SettingsIcon from "$lib/components/icons/SettingsIcon.svelte";
-import { ViewMode, isPanelAllowedInMode, type PanelId } from "./contracts";
+import { PanelId, ViewMode, isPanelAllowedInMode } from "./contracts";
 
 export type PanelDefinition = {
   id: PanelId;
@@ -11,17 +11,17 @@ export type PanelDefinition = {
 };
 
 const PANELS_BY_MODE: Record<ViewMode, PanelId[]> = {
-  [ViewMode.EditorPreview]: ["editor", "preview"],
-  [ViewMode.PreviewOnly]: ["preview"],
-  [ViewMode.Settings]: ["settings"]
+  [ViewMode.EditorPreview]: [PanelId.Editor, PanelId.Preview],
+  [ViewMode.PreviewOnly]: [PanelId.Preview],
+  [ViewMode.Settings]: [PanelId.Settings]
 };
 
 type PanelConfig = { label: string; icon: typeof EditorIcon };
 
 const PANEL_CONFIG: Record<PanelId, PanelConfig> = {
-  editor: { label: "Code editor", icon: EditorIcon },
-  preview: { label: "Preview", icon: PreviewIcon },
-  settings: { label: "Settings", icon: SettingsIcon }
+  [PanelId.Editor]: { label: "Code editor", icon: EditorIcon },
+  [PanelId.Preview]: { label: "Preview", icon: PreviewIcon },
+  [PanelId.Settings]: { label: "Settings", icon: SettingsIcon }
 };
 
 const orderedPanels = Array.from(new Set(Object.values(ViewMode).flatMap((mode) => PANELS_BY_MODE[mode]))) as PanelId[];
