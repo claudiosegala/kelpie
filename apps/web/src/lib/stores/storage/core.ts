@@ -1,3 +1,4 @@
+import { STORAGE_SCHEMA_VERSION } from "./constants";
 import { createDefaultConfiguration, createInitialSnapshot } from "./defaults";
 import type { StorageDriver } from "./driver";
 import {
@@ -13,6 +14,7 @@ import {
   type HistoryTimelineView,
   type HistoryUndoContext
 } from "./history";
+import { runMigrations } from "./migrations";
 import type {
   HistoryEntry,
   IsoDateTimeString,
@@ -55,7 +57,14 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
   const now = options.now ?? (() => new Date().toISOString());
   const broadcast = options.broadcast ?? (() => {});
 
-  const initialSnapshot = driver.load() ?? createInitialSnapshot();
+  const loadedSnapshot = driver.load() ?? createInitialSnapshot();
+  const migrationResult = runMigrations(loadedSnapshot, STORAGE_SCHEMA_VERSION, { now });
+
+  if (migrationResult.applied.length) {
+    driver.save(migrationResult.snapshot);
+  }
+
+  const initialSnapshot = migrationResult.snapshot;
 
   let currentSnapshot = initialSnapshot;
   let historyCache: HistoryCache = createHistoryCache(initialSnapshot);

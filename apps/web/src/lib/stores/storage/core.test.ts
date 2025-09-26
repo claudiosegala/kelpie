@@ -3,6 +3,7 @@ import { createStorageCore } from "./core";
 import { createDefaultConfiguration } from "./defaults";
 import type { StorageDriver } from "./driver";
 import type { StorageSnapshot } from "./types";
+import { registerMigrationForTesting } from "./migrations";
 
 function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
   const base: StorageSnapshot = {
@@ -188,6 +189,43 @@ describe("createStorageCore", () => {
     expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
       driver
     });
+  });
+
+  it("runs migrations for older snapshots and persists the result", () => {
+    const now = () => "2024-03-01T00:00:00.000Z";
+    const cleanup = registerMigrationForTesting({
+      from: 0,
+      to: 1,
+      migrate(current) {
+        return {
+          ...current,
+          meta: { ...current.meta, version: 1 },
+          config: { ...current.config, historyEntryCap: 42 }
+        };
+      }
+    });
+
+    const baseSnapshot = createSnapshot();
+    const legacySnapshot = createSnapshot({
+      meta: { ...baseSnapshot.meta, version: 0 },
+      config: { ...baseSnapshot.config, historyEntryCap: 10 }
+    });
+
+    loadSpy.mockReturnValueOnce(legacySnapshot);
+
+    const core = createStorageCore({ driver, now });
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    const persisted = saveSpy.mock.calls[0]![0] as StorageSnapshot;
+    expect(persisted.meta.version).toBe(1);
+    expect(persisted.meta.migratedFrom).toBe("0");
+    expect(persisted.config.historyEntryCap).toBe(42);
+    expect(persisted.audit).toHaveLength(1);
+    expect(persisted.audit[0]).toMatchObject({ type: "migration.completed", createdAt: now() });
+
+    expect(core.getState().snapshot).toEqual(persisted);
+
+    cleanup();
   });
 
   it("exposes config state that stays in sync with snapshot updates", () => {
