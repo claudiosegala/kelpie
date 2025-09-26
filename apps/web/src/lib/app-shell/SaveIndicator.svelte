@@ -5,34 +5,36 @@
 
   $: status = $saveStatus;
   $: statusLabel = status.message;
-  $: timestampLabel =
-    status.timestamp && status.kind === "saved" ? `(${new Date(status.timestamp).toLocaleTimeString()})` : undefined;
+  $: lastSavedAt = status.timestamp && status.kind === "saved" ? new Date(status.timestamp) : undefined;
   const localSaveTooltip =
     "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
   const errorTooltip =
     "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
-  $: tooltipMessage = status.kind === "error" ? errorTooltip : localSaveTooltip;
+  $: tooltipMessage = (() => {
+    const base = status.kind === "error" ? errorTooltip : localSaveTooltip;
+    if (lastSavedAt) {
+      return `${base}\nLast saved at ${lastSavedAt.toLocaleTimeString()}.`;
+    }
+    return base;
+  })();
 
-  type ToneClasses = { container: string; label: string; timestamp: string };
+  type ToneClasses = { container: string; label: string };
 
   $: tone = (() => {
     const base: ToneClasses = {
       container: "border-success/60 bg-success/10 text-success/90",
-      label: "text-success",
-      timestamp: "text-success/70"
+      label: "text-success"
     };
     if (status.kind === "error") {
       return {
         container: "border-error/60 bg-error/10 text-error/90",
-        label: "text-error",
-        timestamp: "text-error/70"
+        label: "text-error"
       } satisfies ToneClasses;
     }
     if (status.kind === "saving") {
       return {
         container: "border-info/60 bg-info/10 text-info/90 animate-pulse",
-        label: "text-info",
-        timestamp: "text-info/70"
+        label: "text-info"
       } satisfies ToneClasses;
     }
     return base;
@@ -58,10 +60,7 @@
       {#if status.kind === "saving"}
         <span class="badge badge-xs animate-pulse border border-info/40 bg-info/20 text-info/90">&nbsp;</span>
       {/if}
-       <span class={`text-sm font-medium tracking-tight ${tone.label}`}>{statusLabel}</span>
+      <span class={`text-sm font-medium tracking-tight ${tone.label}`}>{statusLabel}</span>
     </div>
-    {#if timestampLabel && status.kind === "saved"}
-      <span class={`text-[0.65rem] ${tone.timestamp}`}>{timestampLabel}</span>
-    {/if}
   </div>
 </div>
