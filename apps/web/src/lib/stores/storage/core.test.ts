@@ -55,6 +55,34 @@ describe("createStorageCore", () => {
   let clearSpy: ReturnType<typeof vi.fn>;
   let triggerSubscription: (() => void) | undefined;
 
+  function expectSaveCall(index: number): StorageSnapshot {
+    const call = saveSpy.mock.calls[index];
+    expect(call).toBeDefined();
+    if (!call) {
+      throw new Error(`Expected saveSpy call at index ${index}`);
+    }
+    const [snapshot] = call;
+    expect(snapshot).toBeDefined();
+    if (!snapshot) {
+      throw new Error(`Expected snapshot argument for saveSpy call at index ${index}`);
+    }
+    return snapshot as StorageSnapshot;
+  }
+
+  function expectLastSave(): StorageSnapshot {
+    const call = saveSpy.mock.calls.at(-1);
+    expect(call).toBeDefined();
+    if (!call) {
+      throw new Error("Expected saveSpy to have been called at least once");
+    }
+    const [snapshot] = call;
+    expect(snapshot).toBeDefined();
+    if (!snapshot) {
+      throw new Error("Expected snapshot argument in last saveSpy call");
+    }
+    return snapshot as StorageSnapshot;
+  }
+
   beforeEach(() => {
     loadSpy = vi.fn();
     saveSpy = vi.fn();
@@ -109,9 +137,9 @@ describe("createStorageCore", () => {
     const core = createStorageCore({ driver, now });
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const persisted = saveSpy.mock.calls[0]![0] as StorageSnapshot;
+    const persisted = expectSaveCall(0);
     expect(persisted.audit.at(-1)).toMatchObject({
-      type: "storage.corruption",
+      type: AuditEventType.StorageCorruption,
       createdAt: now(),
       metadata: { reason: "parse" }
     });
@@ -206,7 +234,7 @@ describe("createStorageCore", () => {
     core.reset();
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
+    const savedSnapshot = expectSaveCall(0);
 
     expect(savedSnapshot.config).toEqual(createDefaultConfiguration());
     expect(savedSnapshot.index).toEqual([]);
@@ -256,12 +284,15 @@ describe("createStorageCore", () => {
     const core = createStorageCore({ driver, now });
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const persisted = saveSpy.mock.calls[0]![0] as StorageSnapshot;
+    const persisted = expectSaveCall(0);
     expect(persisted.meta.version).toBe(1);
     expect(persisted.meta.migratedFrom).toBe("0");
     expect(persisted.config.historyEntryCap).toBe(42);
     expect(persisted.audit).toHaveLength(1);
-    expect(persisted.audit[0]).toMatchObject({ type: "migration.completed", createdAt: now() });
+    expect(persisted.audit[0]).toMatchObject({
+      type: AuditEventType.MigrationCompleted,
+      createdAt: now()
+    });
 
     expect(core.getState().snapshot).toEqual(persisted);
 
@@ -297,7 +328,7 @@ describe("createStorageCore", () => {
     const changed = core.update(() => updated);
 
     expect(changed).toBe(true);
-    const savedSnapshot = saveSpy.mock.calls.at(-1)?.[0] as StorageSnapshot;
+    const savedSnapshot = expectLastSave();
     expect(savedSnapshot.config).toEqual(updated.config);
     expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
     expect(core.getState().config).toEqual(updated.config);
@@ -322,7 +353,7 @@ describe("createStorageCore", () => {
 
     expect(changed).toBe(true);
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
+    const savedSnapshot = expectSaveCall(0);
     expect(savedSnapshot.settings).toEqual(updated.settings);
     expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
     expect(core.getState().snapshot).toEqual(savedSnapshot);
@@ -373,8 +404,10 @@ describe("createStorageCore", () => {
 
     expect(changed).toBe(true);
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
-    expect(savedSnapshot.documents[nextDocument.id]).toEqual(nextDocument);
+    const savedSnapshot = expectSaveCall(0);
+    const persisted = savedSnapshot.documents[nextDocument.id];
+    expect(persisted).toBeDefined();
+    expect(persisted).toEqual(nextDocument);
     expect(savedSnapshot.index).toContainEqual({
       id: nextDocument.id,
       title: nextDocument.title,
@@ -383,7 +416,9 @@ describe("createStorageCore", () => {
       deletedAt: null,
       purgeAfter: null
     });
-    expect(core.getState().snapshot.documents[nextDocument.id]).toEqual(nextDocument);
+    const stateDoc = core.getState().snapshot.documents[nextDocument.id];
+    expect(stateDoc).toBeDefined();
+    expect(stateDoc).toEqual(nextDocument);
   });
 
   it("does not persist when the updater returns the current snapshot", () => {
@@ -446,6 +481,10 @@ describe("createStorageCore", () => {
       const entry = snapshot.index[0];
       const document = snapshot.documents["doc-123"];
 
+      if (!entry || !document) {
+        throw new Error("expected seeded document entry");
+      }
+
       entry.title = "Renamed";
       entry.updatedAt = "2024-01-02T00:00:00.000Z";
       document.title = "Renamed";
@@ -458,11 +497,15 @@ describe("createStorageCore", () => {
     expect(changed).toBe(false);
     expect(saveSpy).not.toHaveBeenCalled();
     const state = core.getState();
-    expect(state.snapshot.index[0]).toMatchObject({
+    const entry = state.snapshot.index[0];
+    expect(entry).toBeDefined();
+    expect(entry).toMatchObject({
       title: "Renamed",
       updatedAt: "2024-01-02T00:00:00.000Z"
     });
-    expect(state.snapshot.documents["doc-123"]).toMatchObject({
+    const document = state.snapshot.documents["doc-123"];
+    expect(document).toBeDefined();
+    expect(document).toMatchObject({
       title: "Renamed",
       content: "Updated",
       updatedAt: "2024-01-02T00:00:00.000Z"
@@ -613,6 +656,9 @@ describe("createStorageCore", () => {
     );
 
     expect(undoEntry?.id).toBe("hist-2");
+    if (!undoEntry) {
+      throw new Error("expected undo entry to be defined");
+    }
     const timelineAfterUndo = core.history.timeline({
       scope: HistoryScope.Document,
       refId: "doc-123"
@@ -621,13 +667,17 @@ describe("createStorageCore", () => {
     expect(timelineAfterUndo.future).toHaveLength(1);
 
     core.update((snapshot) => {
-      const undoSnapshot = undoEntry?.snapshot as { content: string };
+      const previous = snapshot.documents["doc-123"];
+      if (!previous) {
+        throw new Error("expected active document to exist");
+      }
+      const undoSnapshot = undoEntry.snapshot as { content: string };
       return {
         ...snapshot,
         documents: {
           ...snapshot.documents,
           "doc-123": {
-            ...snapshot.documents["doc-123"],
+            ...previous,
             content: undoSnapshot.content
           }
         }

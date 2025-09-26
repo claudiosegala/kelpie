@@ -45,7 +45,7 @@ export class StorageCorruptionError extends Error {
 }
 
 export class StorageDriverQuotaError extends Error {
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   constructor(cause: unknown) {
     super("storage quota exceeded");
@@ -192,6 +192,9 @@ export function createLocalStorageDriver(key: string, options: CreateLocalStorag
     const excess = backupKeys.length - backupLimit;
     for (let index = 0; index < excess; index += 1) {
       const keyToRemove = backupKeys[index];
+      if (!keyToRemove) {
+        continue;
+      }
       try {
         storage.removeItem(keyToRemove);
       } catch (error) {

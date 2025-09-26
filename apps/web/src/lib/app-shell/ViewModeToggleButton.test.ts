@@ -4,26 +4,26 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import ViewModeToggleButton from "./ViewModeToggleButton.svelte";
-import type { ViewMode } from "./contracts";
+import { ShellLayout, ViewMode, type ViewMode as ViewModeType } from "./contracts";
 import { setLayout, setViewMode, shellState } from "$lib/stores/shell";
 
-type ModeExpectation = { id: ViewMode; label: string };
+type ModeExpectation = { id: ViewModeType; label: string };
 
 const modes: ModeExpectation[] = [
-  { id: "editor-preview", label: "Editor & preview" },
-  { id: "preview-only", label: "Preview" },
-  { id: "settings", label: "Settings" }
+  { id: ViewMode.EditorPreview, label: "Editor & preview" },
+  { id: ViewMode.PreviewOnly, label: "Preview" },
+  { id: ViewMode.Settings, label: "Settings" }
 ];
 
 describe("ViewModeToggleButton", () => {
   beforeEach(() => {
-    setLayout("desktop");
-    setViewMode("editor-preview");
+    setLayout(ShellLayout.Desktop);
+    setViewMode(ViewMode.EditorPreview);
   });
 
   afterEach(() => {
-    setLayout("desktop");
-    setViewMode("editor-preview");
+    setLayout(ShellLayout.Desktop);
+    setViewMode(ViewMode.EditorPreview);
   });
 
   it("renders an accessible toggle for each view mode", () => {
@@ -50,7 +50,7 @@ describe("ViewModeToggleButton", () => {
     await tick();
 
     const state = get(shellState);
-    expect(state.viewMode).toBe("preview-only");
+    expect(state.viewMode).toBe(ViewMode.PreviewOnly);
     expect(state.activePanel).toBe("preview");
     expect(previewButton).toHaveAttribute("aria-pressed", "true");
   });
@@ -58,7 +58,7 @@ describe("ViewModeToggleButton", () => {
   it("reflects external view mode changes", async () => {
     render(ViewModeToggleButton);
 
-    setViewMode("settings");
+    setViewMode(ViewMode.Settings);
     await tick();
 
     const settingsButton = screen.getByRole("button", { name: "Settings" });

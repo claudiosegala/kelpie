@@ -32,7 +32,7 @@ describe("scheduleBroadcast", () => {
     vi.useFakeTimers();
     vi.resetModules();
 
-    const postMessage = vi.fn();
+    const postMessage = vi.fn<(payload: unknown) => void>();
     const close = vi.fn();
 
     class FakeBroadcastChannel {
@@ -73,7 +73,7 @@ describe("scheduleBroadcast", () => {
     vi.useFakeTimers();
     vi.resetModules();
 
-    const postMessage = vi.fn();
+    const postMessage = vi.fn<(payload: unknown) => void>();
 
     class FakeBroadcastChannel {
       name: string;
@@ -151,7 +151,7 @@ describe("scheduleBroadcast", () => {
 
     const storage = createStorageMock();
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const postMessageSpy = vi.fn(() => {
+    const postMessageSpy = vi.fn<(payload: unknown) => never>(() => {
       throw new Error("post failed");
     });
     const close = vi.fn();
@@ -165,7 +165,6 @@ describe("scheduleBroadcast", () => {
 
       postMessage(payload: unknown) {
         postMessageSpy(payload);
-        throw new Error("post failed");
       }
 
       close() {

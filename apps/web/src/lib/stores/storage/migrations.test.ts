@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { runMigrations } from "./migrations";
 import type { StorageMigration } from "./migrations";
-import type { StorageSnapshot } from "./types";
+import { AuditEventType, type StorageSnapshot } from "./types";
 
 function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
   const base: StorageSnapshot = {
@@ -84,7 +84,7 @@ describe("runMigrations", () => {
     expect(result.snapshot.config.historyEntryCap).toBe(99);
     expect(result.snapshot.audit).toHaveLength(1);
     expect(result.snapshot.audit[0]).toMatchObject({
-      type: "migration.completed",
+      type: AuditEventType.MigrationCompleted,
       createdAt: now(),
       metadata: {
         from: 0,

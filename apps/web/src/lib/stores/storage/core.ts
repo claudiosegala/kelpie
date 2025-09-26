@@ -18,6 +18,7 @@ import {
 import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
 import {
+  AuditEventType,
   StorageBroadcastOrigin,
   StorageBroadcastScope,
   type HistoryEntry,
@@ -80,7 +81,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
           metadata.checksum = checksum;
         }
 
-        corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+        corruptionAudit = createAuditEntry(AuditEventType.StorageCorruption, now(), metadata);
       }
     }) ?? createInitialSnapshot();
 

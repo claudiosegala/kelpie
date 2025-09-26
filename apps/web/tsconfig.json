@@ -12,7 +12,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "moduleResolution": "bundler",
-    "types": ["node", "playwright", "vitest/globals", "@testing-library/jest-dom"]
+    "types": ["@sveltejs/kit", "node", "playwright", "vitest/globals", "@testing-library/jest-dom"]
   },
   "include": ["src", "e2e"]
   // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
