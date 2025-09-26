@@ -11,3 +11,8 @@ declare global {
 }
 
 export {};
+
+declare module "/src/*" {
+  const mod: Record<string, unknown>;
+  export = mod;
+}

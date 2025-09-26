@@ -122,7 +122,7 @@ async function setSaveStatus(page: Page, update: SaveStatusUpdate): Promise<void
 
       const baseTimestamp = resolveTimestamp();
 
-      const { Idle, Saving, Saved, Error } = enums as typeof SaveStatusKind;
+      const { Idle, Saving, Saved, Error: ErrorStatus } = enums as typeof SaveStatusKind;
 
       if (kind === Saving) {
         setter({ kind: Saving, message: message ?? "Saving locally…", timestamp: baseTimestamp ?? Date.now() });
@@ -134,8 +134,12 @@ async function setSaveStatus(page: Page, update: SaveStatusUpdate): Promise<void
         return;
       }
 
-      if (kind === Error) {
-        setter({ kind: Error, message: message ?? "Failed to save locally", timestamp: baseTimestamp ?? Date.now() });
+      if (kind === ErrorStatus) {
+        setter({
+          kind: ErrorStatus,
+          message: message ?? "Failed to save locally",
+          timestamp: baseTimestamp ?? Date.now()
+        });
         return;
       }
 
@@ -198,16 +202,22 @@ Then("the tooltip still describes local storage", async ({ page }) => {
 Then("the timestamp is displayed in parentheses with the local time", async ({ page }) => {
   const iso = lastTimestampIso;
   expect(iso).not.toBeNull();
+  if (!iso) {
+    throw new Error("expected a timestamp to be recorded");
+  }
 
-  const expectedTime = await page.evaluate((timestamp) => new Date(timestamp).toLocaleTimeString(), iso);
+  const expectedTime = await page.evaluate((timestamp: string) => new Date(timestamp).toLocaleTimeString(), iso);
   await expect(indicatorTimestampLocator(page)).toHaveText(`(${expectedTime})`);
 });
 
 Then("the tooltip includes the last saved time on a new line", async ({ page }) => {
   const iso = lastTimestampIso;
   expect(iso).not.toBeNull();
+  if (!iso) {
+    throw new Error("expected a timestamp to be recorded");
+  }
 
-  const formattedTime = await page.evaluate((timestamp) => new Date(timestamp).toLocaleTimeString(), iso);
+  const formattedTime = await page.evaluate((timestamp: string) => new Date(timestamp).toLocaleTimeString(), iso);
   const expectedMessage = `${LOCAL_SAVE_TOOLTIP_MESSAGE}\nLast saved at ${formattedTime}.`;
   await expectTooltipMessage(page, expectedMessage);
 });
@@ -265,8 +275,11 @@ Then("the indicator shows {string}", async ({ page }, label: string) => {
 Then("it displays the formatted time in parentheses after the label", async ({ page }) => {
   const iso = lastTimestampIso;
   expect(iso).not.toBeNull();
+  if (!iso) {
+    throw new Error("expected a timestamp to be recorded");
+  }
 
-  const expectedTime = await page.evaluate((timestamp) => new Date(timestamp).toLocaleTimeString(), iso);
+  const expectedTime = await page.evaluate((timestamp: string) => new Date(timestamp).toLocaleTimeString(), iso);
 
   await expect(indicatorTimestampLocator(page)).toHaveText(`(${expectedTime})`);
 });

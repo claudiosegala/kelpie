@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { appendAuditEntries, createAuditEntry } from "./audit";
 import type { StorageSnapshot } from "./types";
 
-function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
+type SnapshotOverrides = Partial<Omit<StorageSnapshot, "config" | "settings" | "audit" | "meta">> & {
+  meta?: Partial<StorageSnapshot["meta"]>;
+  config?: Partial<StorageSnapshot["config"]>;
+  settings?: Partial<StorageSnapshot["settings"]>;
+  audit?: StorageSnapshot["audit"];
+};
+
+function createSnapshot(overrides: SnapshotOverrides = {}): StorageSnapshot {
   const base: StorageSnapshot = {
     meta: {
       version: 1,
@@ -36,11 +43,15 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
     audit: []
   };
 
+  const { config, settings, meta, audit, ...rest } = overrides;
+
   return {
     ...base,
-    ...overrides,
-    config: { ...base.config, ...(overrides.config ?? {}) },
-    audit: overrides.audit ?? base.audit
+    ...rest,
+    meta: { ...base.meta, ...(meta ?? {}) },
+    config: { ...base.config, ...(config ?? {}) },
+    settings: { ...base.settings, ...(settings ?? {}) },
+    audit: audit ?? base.audit
   } satisfies StorageSnapshot;
 }
 

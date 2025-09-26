@@ -1,18 +1,20 @@
-import { Marked } from "marked";
-import sanitizeHtml from "sanitize-html";
+import { Marked, type MarkedOptions } from "marked";
+import sanitizeHtml, { type Attributes, type IOptions } from "sanitize-html";
 
-const markdownParser = new Marked({
+const markdownParser = new Marked();
+
+const markdownOptions: MarkedOptions = {
   gfm: true,
-  breaks: true,
-  headerIds: false,
-  mangle: false
-});
+  breaks: true
+};
+
+markdownParser.setOptions(markdownOptions);
 
 const sanitizeDefaults = sanitizeHtml.defaults;
 
 const allowedTags = Array.from(new Set([...(sanitizeDefaults.allowedTags ?? []), "img", "input"]));
 
-const allowedAttributes: sanitizeHtml.IOptions["allowedAttributes"] = {
+const allowedAttributes: IOptions["allowedAttributes"] = {
   ...sanitizeDefaults.allowedAttributes,
   a: ["href", "name", "target", "rel", "title"],
   code: ["class"],
@@ -36,7 +38,7 @@ const allowedClasses = {
   pre: [...(baseAllowedClasses.pre ?? []), /^language-/]
 };
 
-const sanitizeOptions: sanitizeHtml.IOptions = {
+const sanitizeOptions: IOptions = {
   ...sanitizeDefaults,
   allowedTags,
   allowedAttributes,
@@ -45,22 +47,26 @@ const sanitizeOptions: sanitizeHtml.IOptions = {
   allowedClasses,
   transformTags: {
     ...sanitizeDefaults.transformTags,
-    a: (tagName, attribs) => ({
-      tagName,
-      attribs: {
-        ...attribs,
-        target: attribs.target ?? "_blank",
-        rel: attribs.rel ?? "noreferrer noopener"
-      }
-    }),
-    img: (tagName, attribs) => ({
-      tagName,
-      attribs: {
-        ...attribs,
-        loading: attribs.loading ?? "lazy",
-        decoding: attribs.decoding ?? "async"
-      }
-    })
+    a(tagName: string, attribs: Attributes) {
+      return {
+        tagName,
+        attribs: {
+          ...attribs,
+          target: attribs.target ?? "_blank",
+          rel: attribs.rel ?? "noreferrer noopener"
+        }
+      };
+    },
+    img(tagName: string, attribs: Attributes) {
+      return {
+        tagName,
+        attribs: {
+          ...attribs,
+          loading: attribs.loading ?? "lazy",
+          decoding: attribs.decoding ?? "async"
+        }
+      };
+    }
   }
 };
 

@@ -111,14 +111,19 @@ describe("createStorageCore", () => {
     const core = createStorageCore({ driver, now });
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const persisted = saveSpy.mock.calls[0]![0] as StorageSnapshot;
-    expect(persisted.audit.at(-1)).toMatchObject({
-      type: "storage.corruption",
+    const firstCall = saveSpy.mock.calls[0];
+    if (!firstCall) {
+      throw new Error("expected save to be called");
+    }
+    const [persisted] = firstCall;
+    const persistedSnapshot = persisted as StorageSnapshot;
+    expect(persistedSnapshot.audit.at(-1)).toMatchObject({
+      type: AuditEventType.StorageCorruption,
       createdAt: now(),
       metadata: { reason: "parse" }
     });
 
-    expect(core.getState().snapshot).toEqual(persisted);
+    expect(core.getState().snapshot).toEqual(persistedSnapshot);
   });
 
   it("updates state when the driver notifies of external changes", () => {
@@ -208,20 +213,25 @@ describe("createStorageCore", () => {
     core.reset();
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
+    const firstCall = saveSpy.mock.calls[0];
+    if (!firstCall) {
+      throw new Error("expected save to be called");
+    }
+    const [savedSnapshot] = firstCall;
+    const snapshot = savedSnapshot as StorageSnapshot;
 
-    expect(savedSnapshot.config).toEqual(createDefaultConfiguration());
-    expect(savedSnapshot.index).toEqual([]);
-    expect(savedSnapshot.documents).toEqual({});
-    expect(savedSnapshot.history).toEqual([]);
-    expect(savedSnapshot.audit).toHaveLength(1);
-    expect(savedSnapshot.audit[0]).toMatchObject({ type: "storage.reset" });
-    expect(savedSnapshot.settings.lastActiveDocumentId).toBeNull();
-    expect(savedSnapshot.settings.panes).toEqual({});
-    expect(savedSnapshot.settings.filters).toEqual({});
+    expect(snapshot.config).toEqual(createDefaultConfiguration());
+    expect(snapshot.index).toEqual([]);
+    expect(snapshot.documents).toEqual({});
+    expect(snapshot.history).toEqual([]);
+    expect(snapshot.audit).toHaveLength(1);
+    expect(snapshot.audit[0]).toMatchObject({ type: AuditEventType.StorageReset });
+    expect(snapshot.settings.lastActiveDocumentId).toBeNull();
+    expect(snapshot.settings.panes).toEqual({});
+    expect(snapshot.settings.filters).toEqual({});
 
-    expect(core.getState().snapshot).toEqual(savedSnapshot);
-    expect(core.getState().settings).toEqual(savedSnapshot.settings);
+    expect(core.getState().snapshot).toEqual(snapshot);
+    expect(core.getState().settings).toEqual(snapshot.settings);
     expect(broadcastSpy).toHaveBeenCalledTimes(1);
     expect(broadcastSpy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -259,14 +269,22 @@ describe("createStorageCore", () => {
     const core = createStorageCore({ driver, now });
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const persisted = saveSpy.mock.calls[0]![0] as StorageSnapshot;
-    expect(persisted.meta.version).toBe(1);
-    expect(persisted.meta.migratedFrom).toBe("0");
-    expect(persisted.config.historyEntryCap).toBe(42);
-    expect(persisted.audit).toHaveLength(1);
-    expect(persisted.audit[0]).toMatchObject({ type: "migration.completed", createdAt: now() });
+    const firstCall = saveSpy.mock.calls[0];
+    if (!firstCall) {
+      throw new Error("expected save to be called");
+    }
+    const [persisted] = firstCall;
+    const snapshot = persisted as StorageSnapshot;
+    expect(snapshot.meta.version).toBe(1);
+    expect(snapshot.meta.migratedFrom).toBe("0");
+    expect(snapshot.config.historyEntryCap).toBe(42);
+    expect(snapshot.audit).toHaveLength(1);
+    expect(snapshot.audit[0]).toMatchObject({
+      type: AuditEventType.MigrationCompleted,
+      createdAt: now()
+    });
 
-    expect(core.getState().snapshot).toEqual(persisted);
+    expect(core.getState().snapshot).toEqual(snapshot);
 
     cleanup();
   });
@@ -300,9 +318,14 @@ describe("createStorageCore", () => {
     const changed = core.update(() => updated);
 
     expect(changed).toBe(true);
-    const savedSnapshot = saveSpy.mock.calls.at(-1)?.[0] as StorageSnapshot;
-    expect(savedSnapshot.config).toEqual(updated.config);
-    expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
+    const latestCall = saveSpy.mock.calls.at(-1);
+    if (!latestCall) {
+      throw new Error("expected save to be called");
+    }
+    const [savedSnapshot] = latestCall;
+    const snapshot = savedSnapshot as StorageSnapshot;
+    expect(snapshot.config).toEqual(updated.config);
+    expect(snapshot.meta.approxSizeBytes).toBeGreaterThan(0);
     expect(core.getState().config).toEqual(updated.config);
   });
 
@@ -325,10 +348,15 @@ describe("createStorageCore", () => {
 
     expect(changed).toBe(true);
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
-    expect(savedSnapshot.settings).toEqual(updated.settings);
-    expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
-    expect(core.getState().snapshot).toEqual(savedSnapshot);
+    const firstCall = saveSpy.mock.calls[0];
+    if (!firstCall) {
+      throw new Error("expected save to be called");
+    }
+    const [savedSnapshot] = firstCall;
+    const snapshot = savedSnapshot as StorageSnapshot;
+    expect(snapshot.settings).toEqual(updated.settings);
+    expect(snapshot.meta.approxSizeBytes).toBeGreaterThan(0);
+    expect(core.getState().snapshot).toEqual(snapshot);
     expect(core.getState().settings).toEqual(updated.settings);
     expect(broadcastSpy).toHaveBeenCalledTimes(1);
     expect(broadcastSpy).toHaveBeenCalledWith(
@@ -376,9 +404,14 @@ describe("createStorageCore", () => {
 
     expect(changed).toBe(true);
     expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
-    expect(savedSnapshot.documents[nextDocument.id]).toEqual(nextDocument);
-    expect(savedSnapshot.index).toContainEqual({
+    const firstCall = saveSpy.mock.calls[0];
+    if (!firstCall) {
+      throw new Error("expected save to be called");
+    }
+    const [savedSnapshot] = firstCall;
+    const snapshot = savedSnapshot as StorageSnapshot;
+    expect(snapshot.documents[nextDocument.id]).toEqual(nextDocument);
+    expect(snapshot.index).toContainEqual({
       id: nextDocument.id,
       title: nextDocument.title,
       createdAt: nextDocument.createdAt,
@@ -448,6 +481,9 @@ describe("createStorageCore", () => {
     const changed = core.update((snapshot) => {
       const entry = snapshot.index[0];
       const document = snapshot.documents["doc-123"];
+      if (!entry || !document) {
+        throw new Error("expected baseline document");
+      }
 
       entry.title = "Renamed";
       entry.updatedAt = "2024-01-02T00:00:00.000Z";
@@ -616,6 +652,9 @@ describe("createStorageCore", () => {
     );
 
     expect(undoEntry?.id).toBe("hist-2");
+    if (!undoEntry) {
+      throw new Error("expected an undo entry");
+    }
     const timelineAfterUndo = core.history.timeline({
       scope: HistoryScope.Document,
       refId: "doc-123"
@@ -624,13 +663,18 @@ describe("createStorageCore", () => {
     expect(timelineAfterUndo.future).toHaveLength(1);
 
     core.update((snapshot) => {
-      const undoSnapshot = undoEntry?.snapshot as { content: string };
+      const undoSnapshot = undoEntry.snapshot as { content: string };
+      const existing = snapshot.documents["doc-123"];
+      if (!existing) {
+        throw new Error("expected document snapshot");
+      }
+
       return {
         ...snapshot,
         documents: {
           ...snapshot.documents,
           "doc-123": {
-            ...snapshot.documents["doc-123"],
+            ...existing,
             content: undoSnapshot.content
           }
         }

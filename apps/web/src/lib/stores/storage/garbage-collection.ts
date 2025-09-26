@@ -1,7 +1,14 @@
 import { appendAuditEntries, createAuditEntry } from "./audit";
 import { estimateSnapshotSize } from "./size";
 import { recordQuotaWarning } from "./instrumentation";
-import type { AuditEntry, HistoryEntry, IsoDateTimeString, StorageSnapshot } from "./types";
+import {
+  AuditEventType,
+  HistoryScope,
+  type AuditEntry,
+  type HistoryEntry,
+  type IsoDateTimeString,
+  type StorageSnapshot
+} from "./types";
 
 export class StorageQuotaError extends Error {
   readonly attemptedSize: number;

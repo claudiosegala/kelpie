@@ -1,13 +1,15 @@
 <svelte:options runes={false} />
 
-<script lang="ts">
-  import StorageInspector from "$lib/components/storage/StorageInspector.svelte";
-
+<script lang="ts" context="module">
   export type DebounceOption = 125 | 250 | 500 | 750 | 1000;
 
   export interface ShellSettings {
     debounceMs: DebounceOption;
   }
+</script>
+
+<script lang="ts">
+  import StorageInspector from "$lib/components/storage/StorageInspector.svelte";
 
   export let settings: ShellSettings = {
     debounceMs: 300 as DebounceOption

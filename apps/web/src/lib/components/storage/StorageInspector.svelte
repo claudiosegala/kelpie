@@ -57,10 +57,9 @@
   function matchesAudit(entry: AuditEntry, query: string): boolean {
     if (!query) return true;
     const normalised = query.toLowerCase();
-    return (
-      entry.type.toLowerCase().includes(normalised) ||
-      (entry.metadata && JSON.stringify(entry.metadata).toLowerCase().includes(normalised))
-    );
+    const metadataMatches =
+      entry.metadata !== undefined && JSON.stringify(entry.metadata).toLowerCase().includes(normalised);
+    return entry.type.toLowerCase().includes(normalised) || metadataMatches;
   }
 
   function resetStorage(): void {
@@ -152,7 +151,10 @@
           <ul class="flex-1 space-y-1 overflow-y-auto px-4 py-3 text-xs">
             {#each $snapshotStore.index
               .map((entry) => $snapshotStore.documents[entry.id])
-              .filter((doc): doc is DocumentSnapshot => Boolean(doc) && matchesDocument(doc, documentQuery))
+              .filter((doc): doc is DocumentSnapshot => {
+                if (!doc) return false;
+                return matchesDocument(doc, documentQuery);
+              })
               .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) as document (document.id)}
               <li class="rounded-lg border border-base-300/50 bg-base-200/40 px-3 py-2">
                 <p class="font-semibold text-base-content">{document.title || "Untitled"}</p>

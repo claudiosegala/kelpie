@@ -19,13 +19,16 @@ import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
 import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./instrumentation";
 import { estimateSnapshotSize } from "./size";
-import type {
-  HistoryEntry,
-  IsoDateTimeString,
-  RuntimeConfiguration,
-  StorageBroadcast,
-  StorageSnapshot,
-  UiSettings
+import {
+  AuditEventType,
+  StorageBroadcastOrigin,
+  StorageBroadcastScope,
+  type HistoryEntry,
+  type IsoDateTimeString,
+  type RuntimeConfiguration,
+  type StorageBroadcast,
+  type StorageSnapshot,
+  type UiSettings
 } from "./types";
 
 export type StorageCoreState = {
@@ -82,7 +85,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
           metadata.checksum = checksum;
         }
 
-        corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+        corruptionAudit = createAuditEntry(AuditEventType.StorageCorruption, now(), metadata);
         recordCorruption({
           reason: error.reason,
           expectedChecksum: error.expectedChecksum,
@@ -209,7 +212,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
 
     const seeded = {
       ...freshSnapshot,
-      audit: appendAuditEntries(freshSnapshot, createAuditEntry("storage.reset", now()))
+      audit: appendAuditEntries(freshSnapshot, createAuditEntry(AuditEventType.StorageReset, now()))
     } satisfies StorageSnapshot;
 
     applySnapshot(seeded, { persist: true, emitBroadcast: true, label: "storage.reset" });
@@ -232,7 +235,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
 
     const annotated = {
       ...seeded,
-      audit: appendAuditEntries(seeded, createAuditEntry("storage.simulatedFirstRun", timestamp))
+      audit: appendAuditEntries(seeded, createAuditEntry(AuditEventType.StorageSimulatedFirstRun, timestamp))
     } satisfies StorageSnapshot;
 
     applySnapshot(annotated, { persist: true, emitBroadcast: true, label: "storage.simulatedFirstRun" });

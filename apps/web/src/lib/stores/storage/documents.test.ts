@@ -74,7 +74,9 @@ describe("document mutations", () => {
     const snapshot = createSnapshot();
     const now = () => "2024-02-01T00:00:00.000Z";
     const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
-    randomUUID.mockReturnValueOnce("audit-1").mockReturnValueOnce("audit-2");
+    randomUUID
+      .mockReturnValueOnce("00000000-0000-0000-0000-000000000001")
+      .mockReturnValueOnce("00000000-0000-0000-0000-000000000002");
 
     const result = createDocument(snapshot, {
       id: "doc-2",
@@ -102,7 +104,7 @@ describe("document mutations", () => {
     const snapshot = createSnapshot();
     const now = () => "2024-02-02T00:00:00.000Z";
     const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
-    randomUUID.mockReturnValue("audit-1");
+    randomUUID.mockReturnValue("00000000-0000-0000-0000-000000000001");
 
     const result = updateDocument(
       snapshot,
@@ -156,7 +158,7 @@ describe("document mutations", () => {
 
     const now = () => "2024-03-01T00:00:00.000Z";
     const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
-    randomUUID.mockReturnValue("audit-1");
+    randomUUID.mockReturnValue("00000000-0000-0000-0000-000000000001");
 
     const result = softDeleteDocument(snapshot, "doc-1", { now });
     expect(result.index[0]).toMatchObject({
@@ -188,7 +190,7 @@ describe("document mutations", () => {
 
     const now = () => "2024-02-05T00:00:00.000Z";
     const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
-    randomUUID.mockReturnValue("audit-1");
+    randomUUID.mockReturnValue("00000000-0000-0000-0000-000000000001");
 
     const result = restoreDocument(snapshot, "doc-1", { now });
     expect(result.index[0]).toMatchObject({ deletedAt: null, purgeAfter: null, updatedAt: now() });
@@ -228,7 +230,7 @@ describe("document mutations", () => {
 
     const now = () => "2024-03-10T00:00:00.000Z";
     const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
-    randomUUID.mockReturnValue("audit-1");
+    randomUUID.mockReturnValue("00000000-0000-0000-0000-000000000001");
 
     const result = reorderDocuments(snapshot, ["doc-2", "doc-1"], { now });
     expect(result.index.map((entry) => entry.id)).toEqual(["doc-2", "doc-1", "doc-3"]);
@@ -262,7 +264,7 @@ describe("document mutations", () => {
 
     const now = () => "2024-02-10T00:00:00.000Z";
     const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
-    randomUUID.mockReturnValue("audit-3");
+    randomUUID.mockReturnValue("00000000-0000-0000-0000-000000000003");
 
     const result = createDocument(snapshot, {
       id: "doc-2",

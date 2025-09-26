@@ -72,7 +72,10 @@ describe("createLocalStorageDriver", () => {
 
     expect(driver.load({ onCorruption: corruption })).toBeNull();
     expect(corruption).toHaveBeenCalledTimes(1);
-    expect(corruption.mock.calls[0][0]).toMatchObject({ reason: "parse" });
+    const firstCorruptionCall = corruption.mock.calls[0];
+    expect(firstCorruptionCall).toBeDefined();
+    const [parseError] = firstCorruptionCall ?? [];
+    expect(parseError).toMatchObject({ reason: "parse" });
     expect(warnSpy).toHaveBeenCalledWith(
       `${STORAGE_LOG_PREFIX}: storage snapshot corruption detected (parse)`,
       expect.any(SyntaxError)
@@ -95,7 +98,10 @@ describe("createLocalStorageDriver", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(driver.load({ onCorruption: corruption })).toBeNull();
     expect(corruption).toHaveBeenCalledTimes(1);
-    expect(corruption.mock.calls[0][0]).toMatchObject({ reason: "checksum" });
+    const checksumCall = corruption.mock.calls[0];
+    expect(checksumCall).toBeDefined();
+    const [checksumError] = checksumCall ?? [];
+    expect(checksumError).toMatchObject({ reason: "checksum" });
     expect(warnSpy).toHaveBeenCalledWith(
       `${STORAGE_LOG_PREFIX}: storage snapshot corruption detected (checksum)`,
       expect.objectContaining({ reason: "checksum" })
@@ -130,7 +136,9 @@ describe("createLocalStorageDriver", () => {
     const unsubscribe = driver.subscribe(callback);
 
     expect(addEventListener).toHaveBeenCalledWith("storage", expect.any(Function));
-    const handler = addEventListener.mock.calls[0][1] as (event: StorageEvent) => void;
+    const firstCall = addEventListener.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    const handler = (firstCall?.[1] as (event: StorageEvent) => void) ?? (() => {});
 
     handler(new StorageEvent("storage", { key: "other" }));
     expect(callback).not.toHaveBeenCalled();
