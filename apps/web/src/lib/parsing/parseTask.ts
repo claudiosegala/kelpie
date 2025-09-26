@@ -13,7 +13,7 @@ const HASH_RE = /#(\w[\w-]*)/g;
  * Parse a single Markdown line into a Task.
  * Returns null if the line does not match the task pattern.
  */
-export function parseTaskLine(line: string): Task | null {
+export function parseTaskLine(line: string, index = 0): Task | null {
   const match = /^-\s\[( |x)\]\s(.*)$/.exec(line);
   if (!match) return null;
 
@@ -44,7 +44,7 @@ export function parseTaskLine(line: string): Task | null {
   rest = rest.replace(HASH_RE, "");
 
   return {
-    id: crypto.randomUUID(),
+    id: hashTask(line, index),
     raw: line,
     checked,
     title: rest.trim(),
@@ -74,6 +74,22 @@ export function formatTask(task: Task): string {
 export function parseMarkdown(md: string): Task[] {
   return md
     .split(/\r?\n/)
-    .map((line) => parseTaskLine(line))
+    .map((line, index) => parseTaskLine(line, index))
     .filter((x): x is Task => x !== null);
+}
+
+function hashTask(raw: string, index: number): string {
+  let hash = 0x811c9dc5;
+
+  for (let i = 0; i < raw.length; i += 1) {
+    hash ^= raw.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  hash ^= index;
+  hash = Math.imul(hash, 0x01000193);
+
+  // Ensure positive 32-bit integer and encode as hex with prefix for readability
+  const unsigned = hash >>> 0;
+  return `task-${unsigned.toString(16).padStart(8, "0")}`;
 }

@@ -54,4 +54,17 @@ describe("parseMarkdown", () => {
     expect(tasks[0]?.checked).toBe(false);
     expect(tasks[1]?.checked).toBe(true);
   });
+
+  it("generates deterministic ids for identical input", () => {
+    const line = "- [ ] Repeat";
+    const first = parseTaskLine(line, 3);
+    const second = parseTaskLine(line, 3);
+    expect(first?.id).toBe(second?.id);
+  });
+
+  it("distinguishes duplicate lines by index", () => {
+    const md = `- [ ] Repeat\n- [ ] Repeat`;
+    const tasks = parseMarkdown(md);
+    expect(tasks[0]?.id).not.toBe(tasks[1]?.id);
+  });
 });
