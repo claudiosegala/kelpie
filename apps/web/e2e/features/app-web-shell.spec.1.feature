@@ -14,4 +14,3 @@ Feature: Save indicator communicates persistence state
     Given the save status is updated to "error" with message "Disk full"
     Then the indicator shows "Disk full"
     And the tooltip explains how to retry or export the data
-
