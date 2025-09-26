@@ -1,4 +1,5 @@
 import { STORAGE_KEY_ROOT } from "./constants";
+import { getLocalStorage, getWindow } from "./environment";
 import type { StorageDriver } from "./driver";
 import type { StorageBroadcast } from "./types";
 
@@ -20,17 +21,23 @@ function resolveBroadcastChannel(): BroadcastChannel | null {
     return broadcastChannel;
   }
 
-  if (typeof window === "undefined") {
+  const host = getWindow();
+  if (!host) {
     return null;
   }
 
-  if (!("BroadcastChannel" in window)) {
+  if (!("BroadcastChannel" in host)) {
     broadcastChannelBroken = true;
     return null;
   }
 
   try {
-    broadcastChannel = new window.BroadcastChannel(BROADCAST_CHANNEL_NAME);
+    const ChannelCtor = host.BroadcastChannel;
+    if (!ChannelCtor) {
+      broadcastChannelBroken = true;
+      return null;
+    }
+    broadcastChannel = new ChannelCtor(BROADCAST_CHANNEL_NAME);
     return broadcastChannel;
   } catch (error) {
     console.warn("Kelpie storage: failed to initialise BroadcastChannel", error);
@@ -63,7 +70,8 @@ function emitViaBroadcastChannel(broadcast: StorageBroadcast): boolean {
 }
 
 function emitViaStorageEvent(broadcast: StorageBroadcast): void {
-  if (typeof localStorage === "undefined") {
+  const storage = getLocalStorage();
+  if (!storage) {
     return;
   }
 
@@ -74,7 +82,7 @@ function emitViaStorageEvent(broadcast: StorageBroadcast): void {
   };
 
   try {
-    localStorage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(payload));
+    storage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
     console.warn("Kelpie storage: failed to write broadcast payload", error);
   }
