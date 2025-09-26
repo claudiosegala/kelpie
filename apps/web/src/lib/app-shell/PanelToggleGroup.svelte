@@ -3,7 +3,8 @@
 <script lang="ts">
   import { activatePanel, shellState } from "$lib/stores/shell";
   import { type PanelId, isPanelAllowedInMode } from "./contracts";
-  import { getDockButtonClasses, type DockButtonTone } from "./dockButtonClasses";
+  import DockToggleButton from "./DockToggleButton.svelte";
+  import { type DockButtonTone } from "./dockButtonClasses";
   import { PANEL_DEFINITIONS } from "./panels";
 
   const panelOptions = PANEL_DEFINITIONS.map((panel) => ({
@@ -29,23 +30,17 @@
     {#each panelOptions as { id, label, Icon } (id)}
       {@const isActive = $shellState.activePanel === id}
       {@const isAllowed = isPanelAllowedInMode(id, $shellState.viewMode)}
-      {@const buttonClasses = getDockButtonClasses({
-        tone: panelTone,
-        isActive,
-        disabled: !isAllowed
-      })}
-      <button
-        type="button"
-        class={buttonClasses}
-        disabled={!isAllowed}
-        on:click={() => handlePanelChange(id)}
-        aria-label={label}
-        title={label}
-        aria-pressed={isActive}
+      <DockToggleButton
+        {id}
+        {label}
+        tone={panelTone}
+        {isActive}
+        isDisabled={!isAllowed}
+        on:select={(event) => handlePanelChange(event.detail as PanelId)}
         data-testid={`panel-toggle-${id}`}
       >
         <svelte:component this={Icon} className="h-4 w-4" />
-      </button>
+      </DockToggleButton>
     {/each}
   </div>
 {/if}

@@ -5,6 +5,8 @@
   import SettingsIcon from "$lib/components/icons/SettingsIcon.svelte";
   import SplitViewIcon from "$lib/components/icons/SplitViewIcon.svelte";
   import { setViewMode, shellState } from "$lib/stores/shell";
+  import type { ViewMode } from "./contracts";
+  import DockToggleButton from "./DockToggleButton.svelte";
   import { ViewMode } from "./contracts";
   import { getDockButtonClasses } from "./dockButtonClasses";
 
@@ -26,16 +28,15 @@
 >
   {#each viewOptions as option (option.id)}
     {@const isActive = $shellState.viewMode === option.id}
-    <button
-      type="button"
-      class={getDockButtonClasses({ tone: "primary", isActive })}
-      on:click={() => handleViewChange(option.id)}
-      aria-pressed={isActive}
-      aria-label={option.label}
-      title={option.label}
+    <DockToggleButton
+      id={option.id}
+      label={option.label}
+      tone="primary"
+      {isActive}
+      on:select={(event) => handleViewChange(event.detail as ViewMode)}
       data-testid={`view-mode-${option.id}`}
     >
       <svelte:component this={option.Icon} className="h-5 w-5" />
-    </button>
+    </DockToggleButton>
   {/each}
 </div>
