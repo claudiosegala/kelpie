@@ -12,8 +12,9 @@
     export let placeholder = "- [ ] Example task @due(2025-10-01) #tag";
 
     let draft = value;
+    let isEditing = false;
 
-    $: if (value !== draft) {
+    $: if (!isEditing && value !== draft) {
         draft = value;
     }
 
@@ -21,6 +22,16 @@
         const target = event.target as HTMLTextAreaElement;
         draft = target.value;
         dispatch("contentChange", { value: draft });
+    }
+
+    function handleFocus() {
+        isEditing = true;
+        dispatch("editingState", { isEditing: true });
+    }
+
+    function handleBlur() {
+        isEditing = false;
+        dispatch("editingState", { isEditing: false });
     }
 </script>
 
@@ -33,8 +44,8 @@
         bind:value={draft}
         placeholder={placeholder}
         on:input={handleInput}
-        on:focus={() => dispatch("editingState", { isEditing: true })}
-        on:blur={() => dispatch("editingState", { isEditing: false })}
+        on:focus={handleFocus}
+        on:blur={handleBlur}
     ></textarea>
 </section>
 
