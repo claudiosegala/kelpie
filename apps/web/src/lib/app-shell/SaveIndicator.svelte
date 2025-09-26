@@ -12,30 +12,35 @@
     "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
   $: tooltipMessage = status.kind === "error" ? errorTooltip : localSaveTooltip;
 
-  type ToneClasses = { container: string; badge: string };
+  type ToneClasses = { container: string; label: string; timestamp: string };
 
   $: tone = (() => {
     const base: ToneClasses = {
-      container: "border-success/60 bg-success/10 text-success",
-      badge: "badge-success"
+      container: "border-success/60 bg-success/10 text-success/90",
+      label: "text-success",
+      timestamp: "text-success/70"
     };
     if (status.kind === "error") {
-      return { container: "border-error/60 bg-error/10 text-error", badge: "badge-error" } satisfies ToneClasses;
+      return {
+        container: "border-error/60 bg-error/10 text-error/90",
+        label: "text-error",
+        timestamp: "text-error/70"
+      } satisfies ToneClasses;
     }
     if (status.kind === "saving") {
-      return { container: "border-info/60 bg-info/10 text-info", badge: "badge-info" } satisfies ToneClasses;
+      return {
+        container: "border-info/60 bg-info/10 text-info/90",
+        label: "text-info",
+        timestamp: "text-info/70"
+      } satisfies ToneClasses;
     }
     return base;
   })();
 
   $: containerClasses = [
-    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm shadow-sm backdrop-blur transition-all duration-300",
+    "flex flex-col gap-1 rounded-2xl border px-3 py-2 text-xs shadow-sm backdrop-blur transition-all duration-300",
     tone.container
   ].join(" ");
-
-  $: badgeClasses = ["badge badge-xs border-0", tone.badge, status.kind === "saving" ? "animate-pulse" : ""]
-    .filter(Boolean)
-    .join(" ");
 </script>
 
 <div class="tooltip tooltip-bottom w-full md:w-auto" data-tip={tooltipMessage}>
@@ -48,11 +53,9 @@
     aria-label={`${statusLabel}. ${tooltipMessage}`}
     tabindex="0"
   >
-    <span class={badgeClasses} aria-hidden="true"></span>
-    <span class="font-medium">{statusLabel}</span>
+    <span class={`font-semibold uppercase tracking-[0.15em] ${tone.label}`}>{statusLabel}</span>
     {#if timestampLabel && status.kind === "saved"}
-      <span class="text-xs text-base-content/60">({timestampLabel})</span>
+      <span class={`text-[0.65rem] ${tone.timestamp}`}>{timestampLabel}</span>
     {/if}
-    <span class="text-xs text-base-content/50" aria-hidden="true">ⓘ</span>
   </div>
 </div>

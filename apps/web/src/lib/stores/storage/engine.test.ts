@@ -118,6 +118,7 @@ describe("createStorageEngine", () => {
   });
 
   it("resets storage to defaults and persists the new snapshot", () => {
+    const broadcastSpy = vi.fn();
     const populated = createSnapshot({
       settings: {
         lastActiveDocumentId: "doc-123",
@@ -165,7 +166,7 @@ describe("createStorageEngine", () => {
 
     loadSpy.mockReturnValue(populated);
 
-    const engine = createStorageEngine({ driver });
+    const engine = createStorageEngine({ driver, broadcast: broadcastSpy });
     engine.reset();
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
@@ -182,6 +183,10 @@ describe("createStorageEngine", () => {
 
     expect(get(engine.snapshot)).toEqual(savedSnapshot);
     expect(get(engine.settings)).toEqual(savedSnapshot.settings);
+    expect(broadcastSpy).toHaveBeenCalledTimes(1);
+    expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
+      driver
+    });
   });
 
   it("exposes a config store that stays in sync with snapshot updates", () => {
@@ -218,6 +223,7 @@ describe("createStorageEngine", () => {
   });
 
   it("persists updates when the updater returns a new snapshot", () => {
+    const broadcastSpy = vi.fn();
     const baseline = createSnapshot();
     const updated = {
       ...baseline,
@@ -230,7 +236,7 @@ describe("createStorageEngine", () => {
 
     loadSpy.mockReturnValue(baseline);
 
-    const engine = createStorageEngine({ driver });
+    const engine = createStorageEngine({ driver, broadcast: broadcastSpy });
     const changed = engine.update(() => updated);
 
     expect(changed).toBe(true);
@@ -238,6 +244,10 @@ describe("createStorageEngine", () => {
     expect(saveSpy).toHaveBeenCalledWith(updated);
     expect(get(engine.snapshot)).toEqual(updated);
     expect(get(engine.settings)).toEqual(updated.settings);
+    expect(broadcastSpy).toHaveBeenCalledTimes(1);
+    expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
+      driver
+    });
   });
 
   it("persists document mutations when returning a new snapshot reference", () => {
@@ -288,16 +298,18 @@ describe("createStorageEngine", () => {
   });
 
   it("does not persist when the updater returns the current snapshot", () => {
+    const broadcastSpy = vi.fn();
     const baseline = createSnapshot();
     loadSpy.mockReturnValue(baseline);
 
-    const engine = createStorageEngine({ driver });
+    const engine = createStorageEngine({ driver, broadcast: broadcastSpy });
     const changed = engine.update((current) => current);
 
     expect(changed).toBe(false);
     expect(saveSpy).not.toHaveBeenCalled();
     expect(get(engine.snapshot)).toEqual(baseline);
     expect(get(engine.settings)).toEqual(baseline.settings);
+    expect(broadcastSpy).not.toHaveBeenCalled();
   });
 
   it("throws when the updater does not return a snapshot", () => {
