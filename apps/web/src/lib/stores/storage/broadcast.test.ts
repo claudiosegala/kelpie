@@ -58,7 +58,7 @@ describe("scheduleBroadcast", () => {
     } as unknown as Window & typeof globalThis);
     vi.stubGlobal("localStorage", storage);
 
-    const { scheduleBroadcast } = await import("./engine");
+    const { scheduleBroadcast } = await import("./broadcast");
 
     scheduleBroadcast(sampleBroadcast);
     vi.runOnlyPendingTimers();
@@ -96,7 +96,7 @@ describe("scheduleBroadcast", () => {
     } as unknown as Window & typeof globalThis);
     vi.stubGlobal("localStorage", storage);
 
-    const { scheduleBroadcast } = await import("./engine");
+    const { scheduleBroadcast } = await import("./broadcast");
 
     const first: StorageBroadcast = {
       scope: "config",
@@ -128,7 +128,7 @@ describe("scheduleBroadcast", () => {
     vi.stubGlobal("window", {} as Window & typeof globalThis);
     vi.stubGlobal("localStorage", storage);
 
-    const { scheduleBroadcast } = await import("./engine");
+    const { scheduleBroadcast } = await import("./broadcast");
 
     scheduleBroadcast(sampleBroadcast);
     vi.runOnlyPendingTimers();
@@ -177,7 +177,7 @@ describe("scheduleBroadcast", () => {
     } as unknown as Window & typeof globalThis);
     vi.stubGlobal("localStorage", storage);
 
-    const { scheduleBroadcast } = await import("./engine");
+    const { scheduleBroadcast } = await import("./broadcast");
 
     scheduleBroadcast(sampleBroadcast);
     vi.runOnlyPendingTimers();
