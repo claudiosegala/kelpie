@@ -90,9 +90,14 @@ describe("createLocalStorageDriver", () => {
     globalThis.localStorage.setItem(`${STORAGE_KEY}.checksum`, "invalid-checksum");
 
     const corruption = vi.fn();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(driver.load({ onCorruption: corruption })).toBeNull();
     expect(corruption).toHaveBeenCalledTimes(1);
     expect(corruption.mock.calls[0][0]).toMatchObject({ reason: "checksum" });
+    expect(warnSpy).toHaveBeenCalledWith(
+      `${STORAGE_LOG_PREFIX}: storage snapshot corruption detected (checksum)`,
+      expect.objectContaining({ reason: "checksum" })
+    );
 
     const backupKey = `${STORAGE_KEY}.backup.${now().replace(/[:.]/g, "-")}`;
     expect(globalThis.localStorage.getItem(backupKey)).toContain("tampered");
