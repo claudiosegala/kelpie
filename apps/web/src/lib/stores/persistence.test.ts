@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SaveStatusKind } from "$lib/app-shell/contracts";
 import { markError, markSaved, markSaving, resetSaveStatus, saveStatus } from "./persistence";
 
 describe("persistence saveStatus store", () => {
@@ -10,7 +11,7 @@ describe("persistence saveStatus store", () => {
 
   it("starts idle with saved messaging", () => {
     const status = get(saveStatus);
-    expect(status).toEqual({ kind: "idle", message: "Saved locally \u2713", timestamp: null });
+    expect(status).toEqual({ kind: SaveStatusKind.Idle, message: "Saved locally \u2713", timestamp: null });
   });
 
   it("records saving state with timestamp", () => {
@@ -19,7 +20,7 @@ describe("persistence saveStatus store", () => {
 
     markSaving();
     const status = get(saveStatus);
-    expect(status.kind).toBe("saving");
+    expect(status.kind).toBe(SaveStatusKind.Saving);
     expect(status.message).toBe("Saving locally\u2026");
     expect(status.timestamp).toBe(Date.now());
   });
@@ -30,7 +31,7 @@ describe("persistence saveStatus store", () => {
 
     markSaved();
     const status = get(saveStatus);
-    expect(status.kind).toBe("saved");
+    expect(status.kind).toBe(SaveStatusKind.Saved);
     expect(status.message).toBe("Saved locally \u2713");
     expect(status.timestamp).toBe(Date.now());
   });
@@ -41,7 +42,7 @@ describe("persistence saveStatus store", () => {
 
     markError(new Error("Disk full"));
     const status = get(saveStatus);
-    expect(status.kind).toBe("error");
+    expect(status.kind).toBe(SaveStatusKind.Error);
     expect(status.message).toBe("Disk full");
     expect(status.timestamp).toBe(Date.now());
   });
@@ -56,6 +57,6 @@ describe("persistence saveStatus store", () => {
     markSaving();
     resetSaveStatus();
     const status = get(saveStatus);
-    expect(status).toEqual({ kind: "idle", message: "Saved locally \u2713", timestamp: null });
+    expect(status).toEqual({ kind: SaveStatusKind.Idle, message: "Saved locally \u2713", timestamp: null });
   });
 });

@@ -4,7 +4,7 @@
   import { onDestroy } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import { shellState, startLayoutWatcher } from "$lib/stores/shell";
-  import { isPanelAllowedInMode } from "./contracts";
+  import { PanelId, ShellLayout, isPanelAllowedInMode } from "./contracts";
   import { getVisiblePanels, type PanelDefinition } from "./panels";
 
   export let version = "0.0.0";
@@ -22,7 +22,7 @@
   $: layout = $shellState.layout;
   $: viewMode = $shellState.viewMode;
   $: visiblePanels = getVisiblePanels(viewMode);
-  $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === "settings";
+  $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === PanelId.Settings;
   $: activePanel = $shellState.activePanel;
 
   function mainClasses(): string {
@@ -30,23 +30,15 @@
   }
 
   function panelClasses(panel: PanelDefinition): string {
-    if (panel.id === "settings") {
+    if (panel.id === PanelId.Settings) {
       return settingsIsSolo ? "app-shell__panel app-shell__panel--full" : "app-shell__panel app-shell__panel--stacked";
     }
 
     return "app-shell__panel app-shell__panel--stacked";
   }
 
-  function panelIsActive(panel: PanelDefinition): boolean {
-    if (layout === "desktop") {
-      return true;
-    }
-
-    return panel.id === activePanel;
-  }
-
   function panelIsHidden(panel: PanelDefinition): boolean {
-    if (layout === "desktop") {
+    if (layout === ShellLayout.Desktop) {
       return false;
     }
 
@@ -67,11 +59,11 @@
         hidden={panelIsHidden(panel)}
       >
         <div class="app-shell__panel-content">
-          {#if panel.slot === "editor"}
+          {#if panel.slot === PanelId.Editor}
             <slot name="editor" />
-          {:else if panel.slot === "preview"}
+          {:else if panel.slot === PanelId.Preview}
             <slot name="preview" />
-          {:else if panel.slot === "settings"}
+          {:else if panel.slot === PanelId.Settings}
             <slot name="settings" />
           {/if}
         </div>

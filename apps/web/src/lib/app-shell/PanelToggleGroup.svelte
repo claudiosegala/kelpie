@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { activatePanel, shellState } from "$lib/stores/shell";
-  import { type PanelId, isPanelAllowedInMode } from "./contracts";
+  import { PanelId, ShellLayout, isPanelAllowedInMode } from "./contracts";
   import { getDockButtonClasses, type DockButtonTone } from "./dockButtonClasses";
   import { PANEL_DEFINITIONS } from "./panels";
 
@@ -19,7 +19,7 @@
   const panelTone: DockButtonTone = "secondary";
 </script>
 
-{#if $shellState.layout === "mobile"}
+{#if $shellState.layout === ShellLayout.Mobile}
   <div
     class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
     role="group"
