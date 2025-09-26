@@ -15,6 +15,38 @@ describe("parseTaskLine", () => {
     expect(t?.checked).toBe(true);
   });
 
+  it("parses tasks without space inside the brackets", () => {
+    const unchecked = parseTaskLine("- []Empty");
+    const checked = parseTaskLine("- [x]Done");
+
+    expect(unchecked?.checked).toBe(false);
+    expect(checked?.checked).toBe(true);
+  });
+
+  it("parses tasks with extra whitespace inside the brackets", () => {
+    const paddedUnchecked = parseTaskLine("- [    ] Extra space");
+    const paddedChecked = parseTaskLine("- [  X  ] Extra space checked");
+
+    expect(paddedUnchecked?.checked).toBe(false);
+    expect(paddedChecked?.checked).toBe(true);
+  });
+
+  it("parses uppercase checkbox markers", () => {
+    const t = parseTaskLine("- [X] Ship release");
+    expect(t?.checked).toBe(true);
+  });
+
+  it("parses alternative bullet markers and indentation", () => {
+    const star = parseTaskLine("* [ ] Star bullet");
+    const plus = parseTaskLine("+ [X] Plus bullet");
+    const indented = parseTaskLine("    - [ ] Indented");
+
+    expect(star?.title).toBe("Star bullet");
+    expect(star?.checked).toBe(false);
+    expect(plus?.checked).toBe(true);
+    expect(indented?.title).toBe("Indented");
+  });
+
   it("parses @tags correctly", () => {
     const t = parseTaskLine("- [ ] Do taxes @due(2025-04-15) @priority(A) @estimate(2h)");
     expect(t?.tags.due).toBe("2025-04-15");

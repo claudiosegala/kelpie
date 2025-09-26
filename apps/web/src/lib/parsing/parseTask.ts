@@ -23,10 +23,11 @@ function resetLastIndex(re: RegExp): void {
  * Returns null if the line does not match the task pattern.
  */
 export function parseTaskLine(line: string, index = 0): Task | null {
-  const match = /^-\s\[( |x)\]\s(.*)$/.exec(line);
+  const match = /^\s*[-*+]\s*\[(\s*[xX]?\s*)\]\s*(.*)$/.exec(line);
   if (!match) return null;
 
-  const checked = match[1] === "x";
+  const marker = match[1] ?? "";
+  const checked = marker.trim().toLowerCase() === "x";
   let rest: string = match[2]!; // ✅ assert non-null
 
   const tags: Record<string, string | string[]> = {};
