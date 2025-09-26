@@ -4,37 +4,9 @@
   import { onDestroy } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import { shellState, startLayoutWatcher } from "$lib/stores/shell";
-  import type { PanelId, ViewMode } from "./contracts";
+  import { getVisiblePanels, type PanelDefinition } from "./panels";
 
   export let version = "0.0.0";
-
-  type PanelDefinition = {
-    id: PanelId;
-    label: string;
-    slot: PanelId;
-    isVisible: (mode: ViewMode) => boolean;
-  };
-
-  const PANELS: PanelDefinition[] = [
-    {
-      id: "editor",
-      label: "Code editor",
-      slot: "editor",
-      isVisible: (mode) => mode === "editor-preview"
-    },
-    {
-      id: "preview",
-      label: "Preview",
-      slot: "preview",
-      isVisible: (mode) => mode !== "settings"
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      slot: "settings",
-      isVisible: (mode) => mode === "settings"
-    }
-  ];
 
   let stopLayoutWatcher: (() => void) | undefined;
 
@@ -48,7 +20,7 @@
 
   $: layout = $shellState.layout;
   $: viewMode = $shellState.viewMode;
-  $: visiblePanels = PANELS.filter((panel) => panel.isVisible(viewMode));
+  $: visiblePanels = getVisiblePanels(viewMode);
   $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === "settings";
 
   function mainClasses(): string {

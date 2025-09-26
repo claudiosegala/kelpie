@@ -35,8 +35,6 @@ export type ShellState = {
   activePanel: PanelId;
 };
 
-export const PANEL_ORDER: PanelId[] = ["editor", "preview", "settings"];
-
 export function defaultPanelForMode(mode: ViewMode): PanelId {
   if (mode === "settings") return "settings";
   if (mode === "preview-only") return "preview";
