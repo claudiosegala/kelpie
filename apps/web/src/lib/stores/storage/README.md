@@ -10,14 +10,14 @@ Svelte stores around a serialised snapshot. The goals are:
 
 ## Modules and responsibilities
 
-| Module | Responsibility |
-| --- | --- |
-| [`constants.ts`](./constants.ts) | Defines schema version numbers and default caps used across the storage layer. |
-| [`types.ts`](./types.ts) | Declares the snapshot schema (installation meta, configuration, settings, document index, history, audit trails). |
-| [`defaults.ts`](./defaults.ts) | Builds default runtime configuration, UI settings, and the initial snapshot that seeds a new installation. |
-| [`driver.ts`](./driver.ts) | Wraps the host persistence API. The default driver uses `localStorage` but any alternative (memory, IndexedDB, remote APIs) can be swapped in. The driver also exposes a `subscribe` hook so the engine can react to external writes (e.g. storage events from other tabs). |
-| [`engine.ts`](./engine.ts) | Turns snapshots into writable Svelte stores (`snapshot`, `config`, `settings`) and exposes lifecycle helpers (`refresh`, `reset`, `update`). The engine coordinates with the driver, applying mutations and keeping derived stores in sync. |
-| [`index.ts`](./index.ts) | Convenience barrel export for the storage subsystem. |
+| Module                           | Responsibility                                                                                                                                                                                                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`constants.ts`](./constants.ts) | Defines schema version numbers and default caps used across the storage layer.                                                                                                                                                                                              |
+| [`types.ts`](./types.ts)         | Declares the snapshot schema (installation meta, configuration, settings, document index, history, audit trails).                                                                                                                                                           |
+| [`defaults.ts`](./defaults.ts)   | Builds default runtime configuration, UI settings, and the initial snapshot that seeds a new installation.                                                                                                                                                                  |
+| [`driver.ts`](./driver.ts)       | Wraps the host persistence API. The default driver uses `localStorage` but any alternative (memory, IndexedDB, remote APIs) can be swapped in. The driver also exposes a `subscribe` hook so the engine can react to external writes (e.g. storage events from other tabs). |
+| [`engine.ts`](./engine.ts)       | Turns snapshots into writable Svelte stores (`snapshot`, `config`, `settings`) and exposes lifecycle helpers (`refresh`, `reset`, `update`). The engine coordinates with the driver, applying mutations and keeping derived stores in sync.                                 |
+| [`index.ts`](./index.ts)         | Convenience barrel export for the storage subsystem.                                                                                                                                                                                                                        |
 
 ## Data flow at runtime
 
@@ -29,9 +29,9 @@ Svelte stores around a serialised snapshot. The goals are:
 3. Mutations go through helper functions:
    - `setDocumentContent` writes the editor value.
    - `toggleTask` re-renders a Markdown line when the preview toggles a task.
-   Both helpers delegate to `updateActiveDocument`, which calls
-   `storage.update(...)` with a new snapshot. The storage engine persists the
-   snapshot via the driver and updates the derived stores.
+     Both helpers delegate to `updateActiveDocument`, which calls
+     `storage.update(...)` with a new snapshot. The storage engine persists the
+     snapshot via the driver and updates the derived stores.
 4. `persistence.ts` is notified of each mutation (`markSaving` before the write
    and `markSaved` afterwards) so the toolbar can surface save status to the user.
 

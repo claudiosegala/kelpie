@@ -6,9 +6,9 @@ Feature: Toggle a task
   Scenario: Mark a task complete
     Given I open the app with "basic.md"
 ```
+
     When I toggle "Buy milk"
     Then the Markdown contains "@done("
-
 
 ```gherkin
 Feature: Toggle tasks
@@ -16,11 +16,11 @@ Feature: Toggle tasks
   Scenario: Mark a task complete and persist
     Given I open the app with "mixed.md"
 ```
+
     When I toggle "Task A"
     Then the Markdown contains "@done("
     And I reload the app
     Then "Task A" should still be checked
-
 
 ```gherkin
 Feature: Add new tasks
