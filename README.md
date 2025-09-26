@@ -1,8 +1,23 @@
 # Kelpie (Mermaid for To-Dos 📝)
 
-Kelpie is an experimental, spec-driven **Markdown to-do editor** that turns GitHub-Flavored Markdown checklists into an interactive task board. It is built with **SvelteKit**, **TypeScript**, and **Vite**, and the entire product direction is documented in public specs.
+Kelpie helps you think, plan, and ship directly from Markdown. Paste in a checklist, toggle tasks in the UI, and Kelpie syncs every change back to the source file—no vendor lock-in, just portable text powered by **SvelteKit**, **TypeScript**, and **Vite**.
 
-> 📸 **Coming soon:** add a screenshot of the editor/preview once the UI stabilizes.
+> 📸 **Coming soon:** we'll drop in a hero screenshot of the editor + board once the UI stabilizes.
+
+## Try the Markdown for yourself
+
+Kelpie understands plain GitHub-Flavored Markdown, so the best way to learn it is to read (or copy) a snippet. Each task below demonstrates a core capability of the app:
+
+```markdown
+- [ ] Take the welcome tour _(toggle this to see live syncing)_
+  - [ ] Edit this sub-task in your editor and watch Kelpie follow along
+- [ ] Add scheduling metadata @due(2024-07-01) @priority(A)
+- [ ] Explore repeating tasks @repeat(1w)
+- [ ] Tag workstreams with #planning #inbox
+- [ ] Mark something done and note the timestamp @done(2024-06-01T09:00:00Z)
+```
+
+Paste that block into the app and you’ll see Kelpie render a split-pane editor/preview, auto-detect metadata, and let you triage tasks with filters like **Today**, **Overdue**, and **Completed**.
 
 ## Table of Contents
 
