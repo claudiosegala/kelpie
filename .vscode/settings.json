@@ -8,5 +8,9 @@
   "editor.detectIndentation": false,
   "eslint.validate": ["typescript", "svelte"],
   "files.eol": "\n",
-  "svelte.enable-ts-plugin": true
+  "svelte.enable-ts-plugin": true,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.experimental.configFile": "web/tailwind.config.js"
 }
