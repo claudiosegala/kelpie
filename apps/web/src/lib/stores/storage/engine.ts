@@ -2,12 +2,38 @@ import { writable, type Readable } from "svelte/store";
 import { STORAGE_KEY_ROOT } from "./constants";
 import { createDefaultConfiguration, createInitialSnapshot } from "./defaults";
 import { createLocalStorageDriver, type StorageDriver } from "./driver";
-import type { RuntimeConfiguration, StorageBroadcast, StorageSnapshot, UiSettings } from "./types";
+import {
+  captureHistorySnapshot,
+  createHistoryCache,
+  getHistoryTimeline,
+  redoHistory,
+  undoHistory,
+  type HistoryCaptureInput,
+  type HistoryCaptureResult,
+  type HistoryCache,
+  type HistoryTarget,
+  type HistoryTimelineView,
+  type HistoryUndoContext
+} from "./history";
+import type {
+  HistoryEntry,
+  IsoDateTimeString,
+  RuntimeConfiguration,
+  StorageBroadcast,
+  StorageSnapshot,
+  UiSettings
+} from "./types";
 
 export type StorageEngine = {
   snapshot: Readable<StorageSnapshot>;
   config: Readable<RuntimeConfiguration>;
   settings: Readable<UiSettings>;
+  history: {
+    capture(input: HistoryCaptureInput): HistoryCaptureResult;
+    undo(target: HistoryTarget, context: HistoryUndoContext): HistoryEntry | null;
+    redo(target: HistoryTarget): HistoryEntry | null;
+    timeline(target: HistoryTarget): HistoryTimelineView;
+  };
   /** Forces a reload from the underlying driver. */
   refresh(): void;
   /** Resets storage to defaults, clearing existing data. */
@@ -21,6 +47,7 @@ export type StorageEngine = {
 
 export type StorageEngineOptions = {
   driver?: StorageDriver;
+  now?: () => IsoDateTimeString;
 };
 
 const BROADCAST_CHANNEL_NAME = "kelpie.storage.broadcast";
@@ -111,16 +138,23 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
   const driver = options.driver ?? createLocalStorageDriver(STORAGE_KEY_ROOT);
   const initial = driver.load() ?? createInitialSnapshot();
 
+  const now = options.now ?? (() => new Date().toISOString());
+
   const snapshotStore = writable<StorageSnapshot>(initial);
   const configStore = writable<RuntimeConfiguration>(initial.config);
   const settingsStore = writable<UiSettings>(initial.settings);
 
+  let currentSnapshot = initial;
+  let historyCache: HistoryCache = createHistoryCache(initial);
+
   function refresh() {
     const next = driver.load();
     if (next) {
+      currentSnapshot = next;
       snapshotStore.set(next);
       configStore.set(next.config);
       settingsStore.set(next.settings);
+      historyCache = createHistoryCache(next);
     }
   }
 
@@ -130,43 +164,36 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
       config: createDefaultConfiguration()
     };
     driver.save(freshSnapshot);
+    currentSnapshot = freshSnapshot;
     snapshotStore.set(freshSnapshot);
     configStore.set(freshSnapshot.config);
     settingsStore.set(freshSnapshot.settings);
+    historyCache = createHistoryCache(freshSnapshot);
   }
 
   function update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean {
-    let changed = false;
-    let nextSnapshot: StorageSnapshot | undefined;
-
-    snapshotStore.update((current) => {
-      const next = updater(current);
-
-      if (!next) {
-        nextSnapshot = undefined;
-        return current;
-      }
-
-      nextSnapshot = next;
-
-      if (next !== current) {
-        changed = true;
-        return next;
-      }
-
-      return current;
-    });
+    const previous = currentSnapshot;
+    const nextSnapshot = updater(previous);
 
     if (!nextSnapshot) {
       throw new Error("storage.update must return a snapshot");
     }
 
+    const historyChanged = nextSnapshot.history !== previous.history;
+    const changed = nextSnapshot !== previous;
+
     if (changed) {
       driver.save(nextSnapshot);
     }
 
+    currentSnapshot = nextSnapshot;
+    snapshotStore.set(nextSnapshot);
     configStore.set(nextSnapshot.config);
     settingsStore.set(nextSnapshot.settings);
+
+    if (historyChanged) {
+      historyCache = createHistoryCache(nextSnapshot);
+    }
 
     return changed;
   }
@@ -179,6 +206,25 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
     snapshot: snapshotStore,
     config: configStore,
     settings: settingsStore,
+    history: {
+      capture(input) {
+        const result = captureHistorySnapshot(currentSnapshot, input, { now });
+        update(() => result.snapshot);
+        // History snapshot changes trigger cache rebuild inside update.
+        return result;
+      },
+      undo(target, context) {
+        const { entry } = undoHistory(historyCache, target, context, { now });
+        return entry;
+      },
+      redo(target) {
+        const { entry } = redoHistory(historyCache, target);
+        return entry;
+      },
+      timeline(target) {
+        return getHistoryTimeline(historyCache, target);
+      }
+    },
     refresh,
     reset,
     update

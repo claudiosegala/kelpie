@@ -297,47 +297,63 @@ untouched.
 
 ## 17. Document Lifecycle & Operations
 
-Document APIs expose the following behaviours:
+Document APIs expose the following behaviours. The listed helpers are the public
+surface expected from the engine module—callers should never mutate the
+snapshot directly.
 
-- **Creation**
-  - Generates a UUID for the document ID.
-  - Inserts a `DocumentIndexEntry` at the requested position (default: end).
-  - Creates an accompanying document snapshot with seeded content and matching
-    timestamps.
-  - Appends audit event `document.created` and history snapshot capturing the
-    initial state.
+- **`createDocument({ title?, content?, position? })`**
+  - Generates a UUID for the document ID and honours an optional insertion
+    position (defaults to the end of the active, non-deleted index).
+  - Seeds the document body with either the provided content or the default
+    template from `defaults.ts` and stamps `createdAt`/`updatedAt` with the same
+    value.
+  - Inserts the new `DocumentIndexEntry`, promotes it to the active selection,
+    and reorders the index accordingly.
+  - Appends audit event `document.created` with metadata `{ id, title }` and a
+    history snapshot capturing the pre-create active document so undo restores
+    focus correctly.
 
-- **Update**
-  - Accepts partial payloads for title/content but always writes a full snapshot
-    to storage.
-  - Bumps `updatedAt` and, when applicable, `lastEditedBy`.
-  - Enqueues a history snapshot prior to persisting the change so undo restores
-    the previous state.
+- **`updateDocument(id, mutator)`**
+  - Fetches the existing document and passes a shallow clone to `mutator`. The
+    mutator returns `{ title?, content?, lastEditedBy? }` which is merged with
+    the stored snapshot before persisting.
+  - Bumps `updatedAt` whenever a field actually changes and, when applicable,
+    stores the provided `lastEditedBy` identity token.
+  - Enqueues a history snapshot **before** persistence so undo returns to the
+    previous state. The snapshot contains `{ id, title, content, updatedAt }`.
 
-- **Soft Delete**
-  - Sets `deletedAt` to now and `purgeAfter` to `now + retention`.
-  - Removes the document ID from default selection flows; if the deleted doc was
-    active, selection moves to the next non-deleted entry.
-  - Appends audit event `document.deleted` and history snapshot.
+- **`softDeleteDocument(id)`**
+  - Sets `deletedAt` to now, calculates `purgeAfter = now + retention`, and
+    removes the document from default selection flows. If the deleted doc was
+    active, selection moves to the next non-deleted entry (or `null`).
+  - Emits audit event `document.deleted` including `{ id, purgeAfter }` and adds
+    a history entry for the active selection change.
 
-- **Restore**
-  - Clears `deletedAt` and `purgeAfter`.
-  - Reinserts the document at its previous index position.
-  - Emits audit event `document.restored`.
+- **`restoreDocument(id)`**
+  - Clears `deletedAt` and `purgeAfter`, reinserts the entry at its previous
+    index position (tracked via a stored `previousIndex` field), and restores
+    focus if no other document is currently active.
+  - Emits audit event `document.restored` and captures a history snapshot of the
+    restored document so redo can reapply changes if the restore is undone.
 
-- **Reorder**
-  - Supports drag/drop style reorderings by accepting a new ordered list of IDs.
-  - Updates only the `index` array; documents retain their metadata.
-  - Emits audit event `document.updated` to track the change.
+- **`reorderDocuments(newOrderIds)`**
+  - Accepts a list containing every non-purged document ID exactly once. The
+    engine validates the list before applying it to `index` to protect against
+    data loss from malformed drag/drop payloads.
+  - Emits audit event `document.reordered` with `{ before, after }` arrays so
+    developers can inspect the delta and test assertions remain easy to write.
 
-- **Purge**
-  - Triggered by garbage collection when `purgeAfter` is in the past.
-  - Permanently removes the index entry, document snapshot, and associated
-    history entries.
-  - Adds audit events for both the purge and history pruning.
+- **`purgeExpiredDocuments(now)`**
+  - Triggered by garbage collection when `purgeAfter ≤ now`. Permanently removes
+    the index entry, associated document snapshot, and all history entries
+    referencing the purged ID.
+  - Adds audit events for both the purge (`document.purged`) and the linked
+    history trimming (`history.pruned`).
 
-All operations must be debounced via the write scheduler (default 2s) but can be
-forced immediately by developer utilities (e.g., reset).
+Settings share similar helpers—`updateSettings(mutator)` and
+`setActiveDocument(id | null)`—that follow the same atomic snapshot update
+pattern. All operations are debounced via the write scheduler (default 2s) but
+can be forced immediately by developer utilities (e.g., reset).
 
 ## 18. History Management
 
@@ -351,8 +367,11 @@ Undo/redo relies on explicit snapshot captures. The spec mandates:
 - **Timelines**
   - Separate stacks per document plus a shared stack for settings. Undoing a doc
     change only affects that document's history.
-  - Each timeline tracks `cursor` state so redo is possible until another write
-    occurs.
+  - Each timeline is implemented as `{ past: [], future: [], cursor }` and
+    tracks `cursor` state so redo is possible until another write occurs. When a
+    new write happens the `future` array is cleared.
+  - History records also persist `origin` (`keyboard`, `toolbar`, `api`) to aid
+    debugging and telemetry.
 
 - **Retention**
   - History older than `historyRetentionDays` or beyond `historyEntryCap` is
@@ -363,6 +382,13 @@ Undo/redo relies on explicit snapshot captures. The spec mandates:
     state onto the redo stack.
   - Redo pops from the redo stack and applies it similarly.
   - Calling undo when no history exists is a no-op.
+
+- **Data structures**
+  - In-memory caches mirror the persisted history so hot paths (undo/redo) avoid
+    reparsing JSON on every action. The cache is rehydrated from the snapshot on
+    boot and invalidated on `refresh()`.
+  - Each history entry includes a monotonically increasing `sequence` so tests
+    can assert ordering even when timestamps are identical (e.g., frozen clock).
 
 History operations must be atomic with the associated document/settings write so
 that the snapshot and history remain consistent.
@@ -388,6 +414,17 @@ Multi-tab support hinges on the driver subscription hook and broadcast events.
   - `scheduleBroadcast` will post messages through `BroadcastChannel` once
     implemented. The API shape is frozen to avoid breaking changes.
 
+- **Scheduling contract**
+  - Calls to `scheduleBroadcast(payload)` enqueue `payload` into a microtask
+    queue that is flushed after `config.debounce.broadcastMs`. Multiple calls
+    within the window coalesce into a single broadcast containing
+    `{ scope: Set<string>, lastMutationAt }`.
+  - The queue is observable in development builds via the inspector so pending
+    broadcasts can be introspected.
+  - Broadcast payloads include a `snapshotChecksum` (matching §22) to detect
+    whether the receiver already applied the same state and can short-circuit
+    redundant refreshes.
+
 - **Edge cases**
   - Tabs detecting schema version mismatches must force a refresh and prompt for
     migration handling (future UX).
@@ -407,6 +444,16 @@ Schema evolution follows a versioned migration system:
     leave the on-disk data untouched.
   - Successful migrations append audit event `migration.completed` and set
     `meta.migratedFrom`.
+
+- **Implementation scaffolding**
+  - Migration steps live in `/apps/web/src/lib/stores/storage/migrations` and
+    export `{ from: number, to: number, migrate(snapshot) }` objects. A helper
+    `runMigrations(snapshot, targetVersion)` iterates through the sorted list and
+    applies each step in order.
+  - Each migration must be idempotent—running the same step twice should return
+    an identical snapshot—to simplify corruption recovery retries.
+  - A `latestSnapshotSchema.json` artefact is emitted by tests to make diffing
+    easier across releases.
 
 - **Corruption handling**
   - Invalid JSON or schema violations trigger an internal `storage.corruption`
@@ -438,7 +485,172 @@ The developer tooling surfaces storage internals for debugging.
   - Debug builds log every storage mutation with before/after sizes.
   - Production builds log only unrecoverable errors.
 
-## 22. AI Handoff & Test Tracking
+## 22. Storage Driver & Persistence Medium
+
+The storage driver is the lowest-level abstraction responsible for reading and
+writing the full snapshot payload. For the MVP we standardise on
+`localStorage`, but the driver contract should remain agnostic so future
+backends (IndexedDB, File System Access API, cloud sync) can be adopted without
+rewriting the engine.
+
+- **Keying & format**
+  - The canonical key is `kelpie.storage`; all writes serialise the snapshot as
+    deterministic JSON with stable key ordering to simplify diffing in dev
+    tools.
+  - Backups (for corruption recovery) are written under
+    `kelpie.storage.backup.{timestamp}` and are pruned automatically when more
+    than three are present.
+  - Broadcast payloads reuse the `kelpie.storage.broadcast` key when
+    `BroadcastChannel` is unavailable.
+
+- **Read semantics**
+  - `read()` returns `null` when no snapshot is present and **never** throws;
+    parsing errors trigger corruption handling (§20) and emit a diagnostic audit
+    event.
+  - Reads must be synchronous to avoid blocking the boot sequence; asynchronous
+    backends must expose a synchronous hydration cache.
+
+- **Write semantics**
+  - `write(snapshot)` performs a single `setItem` call. On quota errors it
+    throws a `StorageQuotaError` subtype so the engine can surface an
+    unrecoverable failure.
+  - Successful writes update an in-memory checksum so redundant writes (same
+    snapshot) can be skipped by callers.
+  - Every write stores the checksum beside the payload (keyed
+    `kelpie.storage.checksum`). During boot the driver reads both values so the
+    engine can detect tampering and trigger corruption recovery when they do not
+    match.
+
+- **Subscriptions**
+  - `subscribe(handler)` wires `window.addEventListener("storage", …)` and
+    returns an unsubscribe function.
+  - Storage events from the same tab are ignored to prevent feedback loops.
+  - When `BroadcastChannel` is supported the driver joins
+    `kelpie.storage.broadcast` and forwards remote messages through the same
+    handler signature.
+
+- **Environment fallbacks**
+  - In non-browser contexts (SSR, Vitest) the driver injects an in-memory shim
+    implementing the same interface so tests can run deterministically.
+  - When `localStorage` is unavailable, boot aborts with a fatal error and the
+    UI surfaces a “storage unsupported” screen (post-MVP).
+
+## 23. Quota Management & Size Tracking
+
+Quota limits vary by browser; the engine provides best-effort safeguards to stay
+within them.
+
+- **Size estimation**
+  - Every successful write computes the serialised byte length and stores it in
+    `meta.approxSize`. This value powers inspector visualisations and GC
+    heuristics.
+  - History and audit entries track their individual byte contributions in
+    memory so GC can prioritise the largest offenders.
+
+- **Preflight checks**
+  - Before writing, the engine estimates the new payload size. If the size
+    exceeds `config.quotaWarningBytes` the write is allowed but an audit entry of
+    type `storage.quota.warning` is appended.
+  - If the size exceeds `config.quotaHardLimitBytes`, the write fails before
+    touching storage and the caller receives a `StorageQuotaError`.
+  - The estimator is deterministic: it reuses the canonical JSON serialiser so
+    the byte size matches the eventual persisted payload within a ±10 byte
+    margin. Deviations outside the margin emit a `storage.quota.drift` audit
+    event for investigation.
+
+- **Garbage collection triggers**
+  - GC runs automatically when a quota warning is emitted, after undo/redo
+    pruning, and whenever the user is idle for longer than
+    `config.gcIdleTriggerMs` (default 30s).
+  - GC follows the ordering defined in §6 and continues until the projected size
+    falls below `quotaWarningBytes`.
+
+- **Developer tooling**
+  - The inspector displays the current payload size vs. quota limits, including
+    a per-section breakdown (documents, history, audit).
+  - Dev builds emit `console.info` messages when GC reduces size by more than
+    10% to help tune retention caps.
+
+## 24. Testing & Instrumentation Strategy
+
+Robust automated coverage is required to ensure the storage layer remains
+stable as schemas evolve.
+
+- **Unit tests**
+  - Driver tests mock `localStorage` failures, broadcast fallbacks, and
+    corruption recovery.
+  - Engine tests validate update atomicity, derived store synchronisation, and
+    quota handling (including GC triggers).
+  - History and migration suites use frozen timestamps to assert deterministic
+    retention.
+
+- **Integration tests**
+  - Playwright flows cover multi-tab editing, undo/redo, and soft delete
+    recovery using two concurrent browser contexts.
+  - A smoke test boots the app with a seeded snapshot and ensures the inspector
+    renders accurate counts.
+  - Visual regression tests capture the inspector panel before and after GC
+    events to guarantee telemetry hooks do not regress UI state.
+
+- **Telemetry hooks**
+  - Optional build-time flag enables instrumentation that records quota
+    warnings, corruption recoveries, and migration durations to `console.table`
+    for manual analysis. This remains disabled in production bundles.
+
+## 25. Security, Privacy & Compliance
+
+Although data remains on-device, the storage layer must respect user privacy and
+handle sensitive content responsibly.
+
+- **Data residency**
+  - All data stays within the browser; no network calls are made from the
+    storage layer.
+  - Future sync providers must be pluggable so enterprise deployments can choose
+    compliant backends.
+
+- **Personally identifiable information**
+  - Audit metadata should never store raw user input beyond document IDs and
+    anonymised author identifiers. Free-form fields must be sanitised before
+    persistence.
+
+- **Encryption readiness**
+  - The snapshot schema must remain compatible with future client-side
+    encryption by isolating encryption-ready fields (documents, history,
+    settings) from non-sensitive configuration.
+  - All driver APIs accept optional `encrypt/decrypt` hooks so encryption can be
+    layered without refactoring call sites.
+
+- **Compliance toggles**
+  - `config.enableAudit` allows deployments to disable audit logging entirely
+    when regulations forbid it. When disabled, API calls must be no-ops but still
+    succeed to keep consumers simple.
+
+## 26. Roadmap & Future Enhancements
+
+These initiatives extend beyond MVP but should influence current decisions.
+
+- **Cloud backup integration**
+  - Pluggable drivers for cloud providers (Supabase, S3, KV) using the same
+    snapshot schema. Requires background sync, conflict resolution, and auth
+    hooks.
+
+- **Selective encryption**
+  - Hybrid model encrypting documents while leaving configuration in plaintext,
+    balancing security with inspectability.
+
+- **Collaborative editing**
+  - Transition from last-write-wins to CRDT-based merges. Requires timeline
+    annotations in history entries and more granular change logs.
+
+- **Schema diff tooling**
+  - CLI to generate migration scaffolds and validate snapshot compatibility via
+    JSON schemas. Aids regression testing and documentation updates.
+
+- **User-facing recovery UX**
+  - Expose deleted document recovery, quota warnings, and corruption restores in
+    the UI with clear affordances.
+
+## 27. AI Handoff & Test Tracking
 
 This section is for the AI or developers to update after implementation runs.
 
@@ -453,8 +665,10 @@ This section is for the AI or developers to update after implementation runs.
 - **What remains to be implemented**:
   - Document/index/settings mutation APIs covering creation, updates, soft delete/restore, and reordering as defined in §17.
   - History capture, undo/redo stacks, retention pruning, and audit hooks described in §18.
-  - Broadcast scheduling, cross-tab refresh flows, and quota-aware garbage collection from §19 and §6.
+  - Broadcast scheduling, cross-tab refresh flows, and quota-aware garbage collection from §§19, 6, and 23.
   - Migration pipeline, corruption recovery, and developer inspector tooling described in §§20–21.
+  - Driver resilience features (backups, fallbacks, quota errors) and telemetry instrumentation from §§22–24.
+  - Privacy toggles, encryption hooks, and compliance-aware audit policies from §25.
 
 - **Test files and coverage**:
   - Unit tests for storage engine hydration, refresh, reset, and update semantics: `/apps/web/src/lib/stores/storage/engine.test.ts`

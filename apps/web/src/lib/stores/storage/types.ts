@@ -56,6 +56,8 @@ export type DocumentSnapshot = {
 
 export type HistoryScope = "document" | "settings";
 
+export type HistoryOrigin = "keyboard" | "toolbar" | "api";
+
 export type HistoryEntry = {
   id: string;
   scope: HistoryScope;
@@ -63,6 +65,8 @@ export type HistoryEntry = {
   snapshot: unknown; // will be narrowed by feature-specific modules
   createdAt: IsoDateTimeString;
   author?: string;
+  origin: HistoryOrigin;
+  sequence: number;
 };
 
 export type AuditEventType =
