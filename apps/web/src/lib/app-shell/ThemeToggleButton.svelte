@@ -1,10 +1,10 @@
 <svelte:options runes={false} />
 
 <script lang="ts">
-  import { theme, toggleTheme } from "$lib/stores/theme";
+  import { Theme, theme, toggleTheme } from "$lib/stores/theme";
 
   function nextThemeLabel(): string {
-    return $theme === "light" ? "Switch to dark theme" : "Switch to light theme";
+    return $theme === Theme.Light ? "Switch to dark theme" : "Switch to light theme";
   }
 </script>
 
@@ -15,7 +15,7 @@
   aria-label={nextThemeLabel()}
   title={nextThemeLabel()}
 >
-  {#if $theme === "light"}
+  {#if $theme === Theme.Light}
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
       <circle cx="12" cy="12" r="4" stroke-width="1.5" />
       <path

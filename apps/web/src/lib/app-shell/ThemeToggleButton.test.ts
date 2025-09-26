@@ -4,32 +4,37 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-type ThemeName = "light" | "dark";
-
 const themeMocks = vi.hoisted(() => {
+  const Theme = {
+    Light: "light",
+    Dark: "dark"
+  } as const;
+
+  type ThemeName = (typeof Theme)[keyof typeof Theme];
+
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { writable } = require("svelte/store") as typeof import("svelte/store");
-  const theme = writable<ThemeName>("light");
-  const toggleTheme = vi.fn(() => theme.update((value) => (value === "light" ? "dark" : "light")));
-  return { theme, toggleTheme };
+  const theme = writable<ThemeName>(Theme.Light);
+  const toggleTheme = vi.fn(() => theme.update((value) => (value === Theme.Light ? Theme.Dark : Theme.Light)));
+  return { theme, toggleTheme, Theme };
 });
 
 vi.mock("$lib/stores/theme", () => themeMocks);
 
 import ThemeToggleButton from "./ThemeToggleButton.svelte";
-import { theme, toggleTheme } from "$lib/stores/theme";
+import { Theme as StoreTheme, theme, toggleTheme } from "$lib/stores/theme";
 
 const toggleThemeMock = toggleTheme as ReturnType<typeof vi.fn>;
 
 describe("ThemeToggleButton", () => {
   beforeEach(async () => {
     toggleThemeMock.mockClear();
-    theme.set("light");
+    theme.set(StoreTheme.Light);
     await tick();
   });
 
   afterEach(async () => {
-    theme.set("light");
+    theme.set(StoreTheme.Light);
     await tick();
   });
 
@@ -38,7 +43,7 @@ describe("ThemeToggleButton", () => {
 
     const button = screen.getByRole("button", { name: "Switch to dark theme" });
     expect(button).toBeInTheDocument();
-    expect(get(theme)).toBe("light");
+    expect(get(theme)).toBe(StoreTheme.Light);
   });
 
   it("invokes the toggle handler when clicked", async () => {
@@ -51,11 +56,11 @@ describe("ThemeToggleButton", () => {
     await tick();
 
     expect(toggleThemeMock).toHaveBeenCalledTimes(1);
-    expect(get(theme)).toBe("dark");
+    expect(get(theme)).toBe(StoreTheme.Dark);
   });
 
   it("uses the dark-theme label when the store is pre-set", async () => {
-    theme.set("dark");
+    theme.set(StoreTheme.Dark);
     await tick();
 
     render(ThemeToggleButton);

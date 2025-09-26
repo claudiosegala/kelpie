@@ -10,12 +10,16 @@
   export let tasks: Task[] = [];
   export let content = "";
 
-  type ViewMode = "tasks" | "markdown";
-  let view: ViewMode = "tasks";
+  enum ViewMode {
+    Tasks = "tasks",
+    Markdown = "markdown"
+  }
+
+  let view: ViewMode = ViewMode.Tasks;
 
   const tabs: Array<{ id: ViewMode; label: string; description: string }> = [
-    { id: "tasks", label: "Tasks", description: "View parsed tasks" },
-    { id: "markdown", label: "Document", description: "View rendered Markdown" }
+    { id: ViewMode.Tasks, label: "Tasks", description: "View parsed tasks" },
+    { id: ViewMode.Markdown, label: "Document", description: "View rendered Markdown" }
   ];
 
   $: markdownHtml = renderMarkdown(content);
@@ -68,7 +72,7 @@
     </nav>
   </header>
 
-  {#if view === "tasks"}
+  {#if view === ViewMode.Tasks}
     {#if tasks.length === 0}
       <div class="flex flex-1 items-center justify-center px-6" data-testid="tasks-empty-state">
         <p
