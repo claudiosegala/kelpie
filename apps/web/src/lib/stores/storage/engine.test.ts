@@ -183,4 +183,55 @@ describe("createStorageEngine", () => {
     expect(get(engine.snapshot)).toEqual(savedSnapshot);
     expect(get(engine.settings)).toEqual(savedSnapshot.settings);
   });
+
+  it("persists updates when the updater returns a new snapshot", () => {
+    const baseline = createSnapshot();
+    const updated = {
+      ...baseline,
+      settings: {
+        ...baseline.settings,
+        lastActiveDocumentId: "doc-123",
+        updatedAt: "2024-01-03T00:00:00.000Z"
+      }
+    } satisfies StorageSnapshot;
+
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver });
+    const changed = engine.update(() => updated);
+
+    expect(changed).toBe(true);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(saveSpy).toHaveBeenCalledWith(updated);
+    expect(get(engine.snapshot)).toEqual(updated);
+    expect(get(engine.settings)).toEqual(updated.settings);
+  });
+
+  it("does not persist when the updater returns the current snapshot", () => {
+    const baseline = createSnapshot();
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver });
+    const changed = engine.update((current) => current);
+
+    expect(changed).toBe(false);
+    expect(saveSpy).not.toHaveBeenCalled();
+    expect(get(engine.snapshot)).toEqual(baseline);
+    expect(get(engine.settings)).toEqual(baseline.settings);
+  });
+
+  it("throws when the updater does not return a snapshot", () => {
+    const baseline = createSnapshot();
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver });
+
+    expect(() =>
+      engine.update(() => {
+        return undefined as unknown as StorageSnapshot;
+      })
+    ).toThrowError("storage.update must return a snapshot");
+    expect(get(engine.snapshot)).toEqual(baseline);
+    expect(saveSpy).not.toHaveBeenCalled();
+  });
 });

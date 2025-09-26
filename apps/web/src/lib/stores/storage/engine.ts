@@ -63,11 +63,20 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
 
     snapshotStore.update((current) => {
       const next = updater(current);
+
+      if (!next) {
+        nextSnapshot = undefined;
+        return current;
+      }
+
       nextSnapshot = next;
+
       if (next !== current) {
         changed = true;
+        return next;
       }
-      return next;
+
+      return current;
     });
 
     if (!nextSnapshot) {
@@ -77,6 +86,7 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
     if (changed) {
       driver.save(nextSnapshot);
     }
+
     configStore.set(nextSnapshot.config);
     settingsStore.set(nextSnapshot.settings);
 
