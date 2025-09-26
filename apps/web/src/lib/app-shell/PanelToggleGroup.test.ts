@@ -4,18 +4,14 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import PanelToggleGroup from "./PanelToggleGroup.svelte";
-import { type PanelId } from "./contracts";
-import { PANEL_DEFINITIONS } from "./panels";
+import { PanelId } from "./contracts";
+import { PANEL_DEFINITIONS, PANEL_LABELS } from "./panels";
 import { activatePanel, setLayout, setViewMode, shellState } from "$lib/stores/shell";
 
-const PANEL_METADATA = PANEL_DEFINITIONS.map(({ id, label }) => ({ id, label })) satisfies {
-  id: PanelId;
-  label: string;
-}[];
+const PANEL_ORDER = PANEL_DEFINITIONS.map((panel) => panel.id);
 
 function panelLabel(panel: PanelId): string {
-  const match = PANEL_METADATA.find((definition) => definition.id === panel);
-  return match?.label ?? panel;
+  return PANEL_LABELS[panel];
 }
 
 describe("PanelToggleGroup", () => {
@@ -60,9 +56,9 @@ describe("PanelToggleGroup", () => {
 
     render(PanelToggleGroup);
 
-    const editorButton = screen.getByRole("button", { name: panelLabel("editor") });
-    const previewButton = screen.getByRole("button", { name: panelLabel("preview") });
-    const settingsButton = screen.getByRole("button", { name: panelLabel("settings") });
+    const editorButton = screen.getByRole("button", { name: panelLabel(PanelId.Editor) });
+    const previewButton = screen.getByRole("button", { name: panelLabel(PanelId.Preview) });
+    const settingsButton = screen.getByRole("button", { name: panelLabel(PanelId.Settings) });
 
     expect(editorButton).toBeDisabled();
     expect(previewButton).toBeDisabled();
@@ -76,8 +72,8 @@ describe("PanelToggleGroup", () => {
 
     render(PanelToggleGroup);
 
-    const previewButton = screen.getByRole("button", { name: panelLabel("preview") });
-    const editorButton = screen.getByRole("button", { name: panelLabel("editor") });
+    const previewButton = screen.getByRole("button", { name: panelLabel(PanelId.Preview) });
+    const editorButton = screen.getByRole("button", { name: panelLabel(PanelId.Editor) });
 
     await user.click(previewButton);
     await tick();
