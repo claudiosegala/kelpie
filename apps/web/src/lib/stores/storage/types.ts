@@ -82,21 +82,24 @@ export type HistoryEntry = {
   sequence: number;
 };
 
-export type AuditEventType =
-  | "document.created"
-  | "document.updated"
-  | "document.deleted"
-  | "document.restored"
-  | "document.reordered"
-  | "document.purged"
-  | "history.pruned"
-  | "settings.updated"
-  | "migration.completed"
-  | "storage.reset"
-  | "storage.simulatedFirstRun"
-  | "storage.gc.run"
-  | "storage.corruption"
-  | "storage.quota.warning";
+export const AuditEventType = {
+  DocumentCreated: "document.created",
+  DocumentUpdated: "document.updated",
+  DocumentDeleted: "document.deleted",
+  DocumentRestored: "document.restored",
+  DocumentReordered: "document.reordered",
+  DocumentPurged: "document.purged",
+  HistoryPruned: "history.pruned",
+  SettingsUpdated: "settings.updated",
+  MigrationCompleted: "migration.completed",
+  StorageReset: "storage.reset",
+  StorageSimulatedFirstRun: "storage.simulatedFirstRun",
+  StorageGarbageCollectionRun: "storage.gc.run",
+  StorageCorruption: "storage.corruption",
+  StorageQuotaWarning: "storage.quota.warning"
+} as const;
+
+export type AuditEventType = (typeof AuditEventType)[keyof typeof AuditEventType];
 
 export type AuditEntry = {
   id: string;
@@ -125,19 +128,23 @@ export type StorageMutationResult = {
 /**
  * Event payload describing a change broadcast across tabs.
  */
-export enum StorageBroadcastScope {
-  Snapshot = "snapshot",
-  Documents = "documents",
-  Settings = "settings",
-  Config = "config",
-  History = "history",
-  Audit = "audit"
-}
+export const StorageBroadcastScope = {
+  Snapshot: "snapshot",
+  Documents: "documents",
+  Settings: "settings",
+  Config: "config",
+  History: "history",
+  Audit: "audit"
+} as const;
 
-export enum StorageBroadcastOrigin {
-  Local = "local",
-  External = "external"
-}
+export type StorageBroadcastScope = (typeof StorageBroadcastScope)[keyof typeof StorageBroadcastScope];
+
+export const StorageBroadcastOrigin = {
+  Local: "local",
+  External: "external"
+} as const;
+
+export type StorageBroadcastOrigin = (typeof StorageBroadcastOrigin)[keyof typeof StorageBroadcastOrigin];
 
 export type StorageBroadcast = {
   scope: StorageBroadcastScope;

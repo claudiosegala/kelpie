@@ -19,6 +19,7 @@ import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
 import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./instrumentation";
 import { estimateSnapshotSize } from "./size";
+import { StorageBroadcastOrigin, StorageBroadcastScope } from "./types";
 import type {
   HistoryEntry,
   IsoDateTimeString,

@@ -1,6 +1,7 @@
 import { appendAuditEntries, createAuditEntry } from "./audit";
 import { estimateSnapshotSize } from "./size";
 import { recordQuotaWarning } from "./instrumentation";
+import { AuditEventType, HistoryScope } from "./types";
 import type { AuditEntry, HistoryEntry, IsoDateTimeString, StorageSnapshot } from "./types";
 
 export class StorageQuotaError extends Error {
