@@ -6,14 +6,18 @@ const { When, Then } = createBdd();
 const layoutSelector = "div[data-layout][data-mode]";
 
 When("I choose the {string} view mode", async ({ page }, label: string) => {
-  const button = page.getByRole("group", { name: "Panel layout" }).getByRole("button", { name: label, exact: true });
+  const button = page
+    .getByRole("group", { name: "Select workspace mode" })
+    .getByRole("button", { name: label, exact: true });
 
   await expect(button).toBeVisible();
   await button.click();
 });
 
 When("I switch to the {string} panel", async ({ page }, label: string) => {
-  const button = page.getByRole("group", { name: "Active panel" }).getByRole("button", { name: label, exact: true });
+  const button = page
+    .getByRole("group", { name: "Select active panel" })
+    .getByRole("button", { name: label, exact: true });
 
   await expect(button).toBeVisible();
   await expect(button).toBeEnabled();
@@ -56,5 +60,5 @@ Then("the {string} panel should be visible", async ({ page }, label: string) => 
 
 Then("the {string} panel should be hidden", async ({ page }, label: string) => {
   const panel = panelLocator(page, label);
-  await expect(panel).toBeHidden();
+  await expect(panel).toHaveJSProperty("hidden", true);
 });
