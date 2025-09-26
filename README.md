@@ -59,6 +59,8 @@ pnpm test
 
 The development server defaults to `http://localhost:5173`. Vite provides hot module reloading, so edits to the app reflect immediately in the browser.
 
+For editor setup details—including the recommended VS Code extensions—see the ["VS Code setup"](./CONTRIBUTING.md#-vs-code-setup) section of `CONTRIBUTING.md`.
+
 ## 📝 Markdown Syntax Cheatsheet
 
 Kelpie understands standard checklist syntax and a handful of extensions:
