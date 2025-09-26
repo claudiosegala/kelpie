@@ -1,7 +1,5 @@
 // place files you want to import through the `$lib` alias in this folder.
 
-// Only needed for TS to understand SVG imports
-declare module "*.svg" {
-  const content: string;
-  export default content;
-}
+export * from "./stores/state";
+export * from "./stores/storage";
+export { default as favicon } from "./assets/favicon.svg";
