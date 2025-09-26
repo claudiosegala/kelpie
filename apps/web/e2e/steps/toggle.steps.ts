@@ -4,13 +4,11 @@ import { expect } from "@playwright/test";
 
 const { When, Then } = createBdd();
 
-function escapeAttribute(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
 function taskCard(page: Page, title: string): Locator {
-  const escapedTitle = escapeAttribute(title);
-  return page.locator(`[data-testid="task-card"][data-task-title="${escapedTitle}"]`).first();
+  return page
+    .getByTestId("task-card")
+    .filter({ has: page.getByTestId("task-title").filter({ hasText: title }) })
+    .first();
 }
 
 When("I toggle {string}", async ({ page }: { page: Page }, title: string) => {

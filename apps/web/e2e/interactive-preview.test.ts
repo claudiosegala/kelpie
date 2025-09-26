@@ -31,13 +31,11 @@ test.describe("interactive preview", () => {
     return payload.file;
   }
 
-  function escapeAttribute(value: string): string {
-    return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  }
-
   function taskCardByTitle(page: Page, title: string): Locator {
-    const escapedTitle = escapeAttribute(title);
-    return page.locator(`[data-testid="task-card"][data-task-title="${escapedTitle}"]`).first();
+    return page
+      .getByTestId("task-card")
+      .filter({ has: page.getByTestId("task-title").filter({ hasText: title }) })
+      .first();
   }
 
   test("renders metadata badges for parsed tasks", async ({ page }) => {

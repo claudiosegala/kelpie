@@ -3,17 +3,12 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 const { When, Then } = createBdd();
 
-function escapeAttribute(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
 function markdownEditor(page: Page): Locator {
   return page.getByTestId("markdown-editor");
 }
 
 function taskTitleLocator(page: Page, title: string): Locator {
-  const escapedTitle = escapeAttribute(title);
-  return page.locator(`[data-testid="task-title"][data-task-title="${escapedTitle}"]`).first();
+  return page.getByTestId("task-title").filter({ hasText: title }).first();
 }
 
 When("I reload the app", async ({ page }) => {
