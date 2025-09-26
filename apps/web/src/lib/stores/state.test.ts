@@ -146,7 +146,7 @@ describe("state store", () => {
 
     const stateValue = get(appState);
     expect(stateValue.documentId).toBe("kelpie-primary-document");
-    expect(stateValue.file).toContain("Buy milk");
+    expect(stateValue.file).toContain("Welcome to Kelpie");
   });
 
   it("updates the active document content while tracking persistence status", async () => {
