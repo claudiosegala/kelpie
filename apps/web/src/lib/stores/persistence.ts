@@ -19,3 +19,7 @@ export function markError(error: unknown): void {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "Failed to save locally";
   set({ kind: "error", message, timestamp: Date.now() });
 }
+
+export function resetSaveStatus(): void {
+  set(initialStatus);
+}

@@ -39,6 +39,7 @@
 </script>
 
 <div class="tooltip tooltip-bottom w-full md:w-auto" data-tip={tooltipMessage}>
+  <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
   <div
     class={containerClasses}
     data-kind={status.kind}
