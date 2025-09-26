@@ -10,14 +10,18 @@ const SAMPLE_SNAPSHOT: StorageSnapshot = {
     version: 1,
     installationId: "install-123",
     createdAt: "2024-01-01T00:00:00.000Z",
-    lastOpenedAt: "2024-01-02T00:00:00.000Z"
+    lastOpenedAt: "2024-01-02T00:00:00.000Z",
+    approxSizeBytes: 0
   },
   config: {
     debounce: { writeMs: 250, broadcastMs: 100 },
     historyRetentionDays: 14,
     historyEntryCap: 50,
     auditEntryCap: 25,
-    softDeleteRetentionDays: 7
+    softDeleteRetentionDays: 7,
+    quotaWarningBytes: 5_000,
+    quotaHardLimitBytes: 10_000,
+    gcIdleTriggerMs: 30_000
   },
   settings: {
     lastActiveDocumentId: null,

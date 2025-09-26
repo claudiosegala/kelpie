@@ -10,14 +10,18 @@ function createSnapshot(): StorageSnapshot {
       version: 1,
       installationId: "test-installation",
       createdAt: "2024-01-01T00:00:00.000Z",
-      lastOpenedAt: "2024-01-01T00:00:00.000Z"
+      lastOpenedAt: "2024-01-01T00:00:00.000Z",
+      approxSizeBytes: 0
     },
     config: {
       debounce: { writeMs: 500, broadcastMs: 200 },
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
-      softDeleteRetentionDays: 7
+      softDeleteRetentionDays: 7,
+      quotaWarningBytes: 5_000,
+      quotaHardLimitBytes: 10_000,
+      gcIdleTriggerMs: 30_000
     },
     settings: {
       lastActiveDocumentId: null,
@@ -77,10 +81,22 @@ describe("createStorageEngine", () => {
 
     engine.update(() => next);
 
-    expect(get(engine.snapshot)).toEqual(next);
+    const snapshotValue = get(engine.snapshot);
+    expect(snapshotValue).toMatchObject({
+      ...next,
+      meta: expect.objectContaining({
+        installationId: next.meta.installationId,
+        createdAt: next.meta.createdAt,
+        lastOpenedAt: next.meta.lastOpenedAt,
+        version: next.meta.version,
+        approxSizeBytes: expect.any(Number)
+      })
+    });
     expect(get(engine.config)).toEqual(next.config);
     expect(get(engine.settings)).toEqual(next.settings);
-    expect(saveSpy).toHaveBeenCalledWith(next);
+    const savedSnapshot = saveSpy.mock.calls.at(-1)?.[0] as StorageSnapshot;
+    expect(savedSnapshot.settings).toEqual(next.settings);
+    expect(savedSnapshot.meta.approxSizeBytes).toBeGreaterThan(0);
   });
 
   it("refreshes Svelte stores when external driver updates occur", () => {

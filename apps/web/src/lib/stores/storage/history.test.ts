@@ -7,7 +7,10 @@ const BASE_CONFIG = {
   historyRetentionDays: 7,
   historyEntryCap: 50,
   auditEntryCap: 20,
-  softDeleteRetentionDays: 7
+  softDeleteRetentionDays: 7,
+  quotaWarningBytes: 5_000,
+  quotaHardLimitBytes: 10_000,
+  gcIdleTriggerMs: 30_000
 } as const;
 
 const BASE_SETTINGS = {
@@ -46,6 +49,7 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
       installationId: "test-installation",
       createdAt: "2024-01-01T00:00:00.000Z",
       lastOpenedAt: "2024-01-01T00:00:00.000Z",
+      approxSizeBytes: 0,
       ...(overrides.meta ?? {})
     },
     config: { ...BASE_CONFIG, ...(overrides.config ?? {}) },
