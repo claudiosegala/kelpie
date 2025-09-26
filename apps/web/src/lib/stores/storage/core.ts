@@ -14,6 +14,7 @@ import {
   type HistoryTimelineView,
   type HistoryUndoContext
 } from "./history";
+import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
 import type {
   HistoryEntry,
@@ -60,11 +61,13 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
   const loadedSnapshot = driver.load() ?? createInitialSnapshot();
   const migrationResult = runMigrations(loadedSnapshot, STORAGE_SCHEMA_VERSION, { now });
 
-  if (migrationResult.applied.length) {
-    driver.save(migrationResult.snapshot);
-  }
+  let initialSnapshot = migrationResult.snapshot;
 
-  const initialSnapshot = migrationResult.snapshot;
+  if (migrationResult.applied.length) {
+    const prepared = normaliseSnapshotForPersistence(migrationResult.snapshot, { now });
+    driver.save(prepared.snapshot);
+    initialSnapshot = prepared.snapshot;
+  }
 
   let currentSnapshot = initialSnapshot;
   let historyCache: HistoryCache = createHistoryCache(initialSnapshot);
@@ -90,17 +93,24 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
     { persist = false, emitBroadcast = false }: { persist?: boolean; emitBroadcast?: boolean } = {}
   ): boolean {
     const previous = currentSnapshot;
-    const changed = nextSnapshot !== previous;
-    const historyChanged = nextSnapshot.history !== previous.history;
+    let candidate = nextSnapshot;
 
-    if (persist && changed) {
-      driver.save(nextSnapshot);
+    if (persist && candidate !== previous) {
+      const prepared = normaliseSnapshotForPersistence(candidate, { now });
+      candidate = prepared.snapshot;
     }
 
-    currentSnapshot = nextSnapshot;
+    const changed = candidate !== previous;
+    const historyChanged = candidate.history !== previous.history;
+
+    if (persist && changed) {
+      driver.save(candidate);
+    }
+
+    currentSnapshot = candidate;
 
     if (historyChanged) {
-      historyCache = createHistoryCache(nextSnapshot);
+      historyCache = createHistoryCache(candidate);
     }
 
     notify();

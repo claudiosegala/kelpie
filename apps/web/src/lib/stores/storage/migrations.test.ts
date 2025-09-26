@@ -9,14 +9,18 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
       version: 1,
       installationId: "install",
       createdAt: "2024-01-01T00:00:00.000Z",
-      lastOpenedAt: "2024-01-01T00:00:00.000Z"
+      lastOpenedAt: "2024-01-01T00:00:00.000Z",
+      approxSizeBytes: 0
     },
     config: {
       debounce: { writeMs: 500, broadcastMs: 200 },
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
-      softDeleteRetentionDays: 7
+      softDeleteRetentionDays: 7,
+      quotaWarningBytes: 1_000,
+      quotaHardLimitBytes: 5_000,
+      gcIdleTriggerMs: 30_000
     },
     settings: {
       lastActiveDocumentId: null,

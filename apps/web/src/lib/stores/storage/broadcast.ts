@@ -1,6 +1,7 @@
 import { STORAGE_KEY_ROOT } from "./constants";
 import { getLocalStorage, getWindow } from "./environment";
 import type { StorageDriver } from "./driver";
+import { storageWarn } from "./logging";
 import type { StorageBroadcast } from "./types";
 
 const BROADCAST_CHANNEL_NAME = "kelpie.storage.broadcast";
@@ -73,7 +74,7 @@ function resolveBroadcastChannel(): BroadcastChannel | null {
     broadcastChannel = new ChannelCtor(BROADCAST_CHANNEL_NAME);
     return broadcastChannel;
   } catch (error) {
-    logRecoverableWarning("Kelpie storage: failed to initialise BroadcastChannel", error);
+    storageWarn("failed to initialise BroadcastChannel", error);
     broadcastChannelBroken = true;
     broadcastChannel = null;
     return null;
@@ -90,7 +91,7 @@ function emitViaBroadcastChannel(broadcast: StorageBroadcast): boolean {
     channel.postMessage(broadcast);
     return true;
   } catch (error) {
-    logRecoverableWarning("Kelpie storage: failed to post broadcast message", error);
+    storageWarn("failed to post broadcast message", error);
     try {
       channel.close();
     } catch {
@@ -117,7 +118,7 @@ function emitViaStorageEvent(broadcast: StorageBroadcast): void {
   try {
     storage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
-    logRecoverableWarning("Kelpie storage: failed to write broadcast payload", error);
+    storageWarn("failed to write broadcast payload", error);
   }
 }
 

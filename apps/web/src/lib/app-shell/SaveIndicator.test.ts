@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/svelte";
 import { tick } from "svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import SaveIndicator from "./SaveIndicator.svelte";
+import { SaveStatusKind } from "$lib/app-shell/contracts";
 import { markError, markSaved, markSaving, resetSaveStatus } from "$lib/stores/persistence";
 
 const localTooltip =
@@ -19,7 +20,7 @@ describe("SaveIndicator", () => {
 
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Saved locally/);
-    expect(indicator).toHaveAttribute("data-kind", "idle");
+    expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Idle);
     expect(indicator).toHaveAttribute("title", localTooltip);
     expect(within(indicator).getByText("Saved locally ✓")).toBeVisible();
     expect(
@@ -35,7 +36,7 @@ describe("SaveIndicator", () => {
 
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Saving locally/);
-    expect(indicator).toHaveAttribute("data-kind", "saving");
+    expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Saving);
     expect(indicator).toHaveAttribute("title", localTooltip);
     const label = within(indicator).getByText("Saving locally…");
     expect(label).toBeVisible();
@@ -53,7 +54,7 @@ describe("SaveIndicator", () => {
 
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Saved locally/);
-    expect(indicator).toHaveAttribute("data-kind", "saved");
+    expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Saved);
     const timestamp = within(indicator).getByText(/\(.+:.+\)/);
     expect(timestamp.textContent).toMatch(/^\(.+\)$/);
   });
@@ -66,7 +67,7 @@ describe("SaveIndicator", () => {
 
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Disk full/);
-    expect(indicator).toHaveAttribute("data-kind", "error");
+    expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Error);
     expect(indicator).toHaveAttribute("title", errorTooltip);
     expect(within(indicator).getByText("Disk full")).toBeVisible();
   });

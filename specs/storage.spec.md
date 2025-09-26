@@ -58,9 +58,13 @@ Storage manages several categories of data.
 - **Meta Information**
   - Contains schema version, installation ID, created and last opened timestamps.
   - Used to detect migrations and corruption recovery.
+  - Tracks `approxSizeBytes`, the estimated payload size at the time of the last
+    successful persistence. This metadata helps GC decisions and inspector
+    tooling surface quota usage without recomputing size on every read.
 
 - **Configuration**
-  - Runtime tunables such as debounce intervals, history retention days, and maximum audit size.
+  - Runtime tunables such as debounce intervals, history retention days, maximum
+    audit size, quota thresholds, and GC cadence.
   - Does not include environment-level flags (e.g. encryption).
   - Defaults are bundled and persisted, but may be inspected and surfaced to developers.
 
@@ -91,9 +95,20 @@ Storage manages several categories of data.
   - A deleted doc is marked with a deletion timestamp and a purge date (7 days later).
 
 - **Dynamic purge**:
-  - Triggered when storage approaches quota.
-  - First purges expired soft-deletes, then oldest history entries.
-  - Purging is silent (no user notifications in MVP).
+  - Every persistence pass normalises the snapshot:
+    1. Purge soft-deleted docs whose `purgeAfter` is in the past, including their
+       document payload, history references, and audit entries noting the purge.
+    2. Estimate the payload size and, when above `quotaWarningBytes`, trim the
+       oldest history entries until the estimate falls back under the warning
+       threshold, emitting a `history.pruned` audit entry with context.
+    3. Abort the write with `StorageQuotaError` when the projected size would
+       exceed `quotaHardLimitBytes`.
+    4. Record a `storage.quota.warning` audit entry when the persisted size still
+       exceeds `quotaWarningBytes` (useful for surfacing UX later).
+    5. Stamp the resulting snapshot with `meta.approxSizeBytes` so future writes
+       can skip recomputing size unless mutations occur.
+  - Garbage collection also runs opportunistically after idle periods using the
+    same pipeline.
 
 - **All-or-nothing guarantee**:
   - A write that cannot fully fit must fail entirely.
@@ -202,11 +217,12 @@ These scenarios serve both as documentation and as test case inspiration:
 5. **Quota is exceeded**:
    - Attempted write fails entirely.
    - No partial or corrupted data is written.
+   - When approaching the warning threshold, GC trims history and records an
+     audit warning so the inspector can surface impending quota issues.
 
 ## 14. Open Questions & Assumptions
 
 - Exact UX for handling storage full or corruption errors.
-- Whether to add warnings when approaching quota.
 - If settings undo/redo should eventually be merged into a global timeline.
 - Whether to implement import/export before backups, or vice versa.
 
@@ -251,11 +267,16 @@ preserve.
     on every boot before any other mutations are processed.
   - `migratedFrom` is optional and records the previous schema version after a
     successful migration.
+  - `approxSizeBytes` is optional but, when present, must equal the estimated
+    size of the most recently persisted snapshot.
 
 - **`config`**
   - Contains runtime tunables. All values must be serialisable primitives to
     keep the snapshot deterministic.
   - `debounce.writeMs` and `debounce.broadcastMs` are positive integers.
+  - Quota settings (`quotaWarningBytes`, `quotaHardLimitBytes`) and
+    `gcIdleTriggerMs` must be non-negative integers. `quotaHardLimitBytes`
+    should be ≥ `quotaWarningBytes` to avoid constant failures.
   - Caps (`historyEntryCap`, `auditEntryCap`) must be ≥ the number of required
     seed entries to avoid trimming defaults.
 
@@ -376,6 +397,8 @@ Undo/redo relies on explicit snapshot captures. The spec mandates:
 - **Retention**
   - History older than `historyRetentionDays` or beyond `historyEntryCap` is
     trimmed FIFO. Trimming records an audit entry of type `history.pruned`.
+  - When GC enforces quota thresholds it may trim additional oldest entries
+    regardless of age, again recording `history.pruned` with `reason: "quota"`.
 
 - **Undo/Redo mechanics**
   - Undo pops the previous snapshot, writes it to storage, and pushes the current
@@ -663,20 +686,22 @@ This section is for the AI or developers to update after implementation runs.
   - Initial storage engine exposing read-only Svelte stores and reset/refresh utilities
   - Document lifecycle helpers with audit events and history capture utilities
   - Audit log capping with helper utilities enforcing configuration caps
+  - Quota-aware garbage collection that normalises snapshots on write, prunes
+    expired documents, trims history for warning thresholds, and records payload
+    size metadata alongside audit warnings
 
 - **What remains to be implemented**:
   - Migration pipeline, corruption recovery, and developer inspector tooling described in §§20–21.
-  - Quota-aware garbage collection and proactive size monitoring from §§6 and 23.
   - Driver resilience features (backups, fallbacks, quota errors) and telemetry instrumentation from §§22–24.
   - Privacy toggles, encryption hooks, and compliance-aware audit policies from §25.
 
 - **Test files and coverage**:
   - Unit tests for storage core hydration, refresh, reset, and update semantics: `/apps/web/src/lib/stores/storage/core.test.ts`
   - Integration tests for the Svelte engine wrapper: `/apps/web/src/lib/stores/storage/engine.test.ts`
-  - Unit tests for history capture and eviction: `/apps/web/src/lib/stores/storage-history.test.ts`
-  - Unit tests for migration upgrades and corruption fallback: `/apps/web/src/lib/stores/storage-migration.test.ts`
-  - Unit tests for multi-tab synchronisation and broadcast throttling: `/apps/web/src/lib/stores/storage-sync.test.ts`
-  - Unit tests for garbage-collection purge ordering: `/apps/web/src/lib/stores/storage-gc.test.ts`
-  - Unit tests for audit logging invariants: `/apps/web/src/lib/stores/storage-audit.test.ts`
+  - Unit tests for history capture and eviction: `/apps/web/src/lib/stores/storage/history.test.ts`
+  - Unit tests for migration upgrades and corruption fallback: `/apps/web/src/lib/stores/storage/migrations.test.ts`
+  - Unit tests for multi-tab synchronisation and broadcast throttling: `/apps/web/src/lib/stores/storage/driver.test.ts`
+  - Unit tests for garbage-collection purge ordering and quota handling: `/apps/web/src/lib/stores/storage/garbage-collection.test.ts`
+  - Unit tests for audit logging invariants: `/apps/web/src/lib/stores/storage/audit.test.ts`
 
 This section is continuously updated as progress is made.

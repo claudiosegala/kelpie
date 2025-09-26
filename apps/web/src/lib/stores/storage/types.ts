@@ -13,6 +13,7 @@ export type InstallationMeta = {
   createdAt: IsoDateTimeString;
   lastOpenedAt: IsoDateTimeString;
   migratedFrom?: string;
+  approxSizeBytes?: number;
 };
 
 export type RuntimeConfiguration = {
@@ -24,6 +25,9 @@ export type RuntimeConfiguration = {
   historyEntryCap: number;
   auditEntryCap: number;
   softDeleteRetentionDays: number;
+  quotaWarningBytes: number;
+  quotaHardLimitBytes: number;
+  gcIdleTriggerMs: number;
 };
 
 export type UiSettings = {
@@ -75,11 +79,13 @@ export type AuditEventType =
   | "document.deleted"
   | "document.restored"
   | "document.reordered"
+  | "document.purged"
   | "history.pruned"
   | "settings.updated"
   | "migration.completed"
   | "storage.reset"
-  | "storage.corruption";
+  | "storage.corruption"
+  | "storage.quota.warning";
 
 export type AuditEntry = {
   id: string;

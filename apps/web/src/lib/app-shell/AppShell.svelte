@@ -4,7 +4,7 @@
   import { onDestroy } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import { shellState, startLayoutWatcher } from "$lib/stores/shell";
-  import { isPanelAllowedInMode } from "./contracts";
+  import { PanelId, ShellLayout, isPanelAllowedInMode } from "./contracts";
   import { getVisiblePanels, type PanelDefinition } from "./panels";
 
   export let version = "0.0.0";
@@ -34,7 +34,7 @@
   $: layout = $shellState.layout;
   $: viewMode = $shellState.viewMode;
   $: visiblePanels = getVisiblePanels(viewMode);
-  $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === "settings";
+  $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === PanelId.Settings;
   $: activePanel = $shellState.activePanel;
   $: isDesktopLayout = layout === "desktop";
   $: mainClassName = settingsIsSolo ? MAIN_CENTERED_CLASS : MAIN_CLASS;
@@ -69,11 +69,11 @@
         hidden={panel.isHidden}
       >
         <div class="app-shell__panel-content">
-          {#if panel.slot === "editor"}
+          {#if panel.slot === PanelId.Editor}
             <slot name="editor" />
-          {:else if panel.slot === "preview"}
+          {:else if panel.slot === PanelId.Preview}
             <slot name="preview" />
-          {:else if panel.slot === "settings"}
+          {:else if panel.slot === PanelId.Settings}
             <slot name="settings" />
           {:else}
             <slot />
