@@ -3,7 +3,7 @@ import { createBdd } from "playwright-bdd";
 
 const { When, Then } = createBdd();
 
-const layoutSelector = "div[data-layout][data-mode]";
+const shellTestId = "app-shell";
 
 const viewModeIds = new Map<string, string>([
   ["Editor & preview", "editor-preview"],
@@ -60,12 +60,12 @@ When("I resize the viewport to {string}", async ({ page }, layout: string) => {
   await page.setViewportSize(viewport);
 
   const targetLayout = normalized === "mobile" ? "mobile" : "desktop";
-  const shell = page.locator(layoutSelector).first();
+  const shell = page.getByTestId(shellTestId);
   await expect(shell).toHaveAttribute("data-layout", targetLayout);
 });
 
 Then("the layout should be {string}", async ({ page }, layout: string) => {
-  const shell = page.locator(layoutSelector).first();
+  const shell = page.getByTestId(shellTestId);
   await expect(shell).toHaveAttribute("data-layout", layout);
 });
 

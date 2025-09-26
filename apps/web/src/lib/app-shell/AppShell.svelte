@@ -64,7 +64,7 @@
   }
 </script>
 
-<div class="app-shell" data-layout={layout} data-mode={viewMode}>
+<div class="app-shell" data-testid="app-shell" data-layout={layout} data-mode={viewMode}>
   <Toolbar {version} />
   <main class={mainClasses()} data-layout={layout}>
     {#each visiblePanels as panel (panel.id)}
