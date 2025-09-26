@@ -21,6 +21,7 @@ export type StorageEngine = {
 
 export type StorageEngineOptions = {
   driver?: StorageDriver;
+  broadcast?: (broadcast: StorageBroadcast, options?: { driver?: StorageDriver }) => void;
 };
 
 const BROADCAST_CHANNEL_NAME = "kelpie.storage.broadcast";
@@ -109,6 +110,7 @@ function emitViaStorageEvent(broadcast: StorageBroadcast): void {
  */
 export function createStorageEngine(options: StorageEngineOptions = {}): StorageEngine {
   const driver = options.driver ?? createLocalStorageDriver(STORAGE_KEY_ROOT);
+  const broadcast = options.broadcast ?? scheduleBroadcast;
   const initial = driver.load() ?? createInitialSnapshot();
 
   const snapshotStore = writable<StorageSnapshot>(initial);
@@ -133,6 +135,14 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
     snapshotStore.set(freshSnapshot);
     configStore.set(freshSnapshot.config);
     settingsStore.set(freshSnapshot.settings);
+    broadcast(
+      {
+        scope: "snapshot",
+        updatedAt: new Date().toISOString(),
+        origin: "local"
+      },
+      { driver }
+    );
   }
 
   function update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean {
@@ -167,6 +177,17 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
 
     configStore.set(nextSnapshot.config);
     settingsStore.set(nextSnapshot.settings);
+
+    if (changed) {
+      broadcast(
+        {
+          scope: "snapshot",
+          updatedAt: new Date().toISOString(),
+          origin: "local"
+        },
+        { driver }
+      );
+    }
 
     return changed;
   }
