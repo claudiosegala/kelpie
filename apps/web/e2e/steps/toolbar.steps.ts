@@ -4,7 +4,7 @@ import {
   TOOLBAR_BRAND_CLUSTER_CLASSES,
   TOOLBAR_CONTROLS_CLUSTER_CLASSES,
   TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES,
-  TOOLBAR_TEST_IDS,
+  ToolbarTestId,
   TOOLBAR_WRAPPER_CLASSES
 } from "../../src/lib/app-shell/toolbar.constants";
 
@@ -51,20 +51,20 @@ Then("the toolbar displays the save indicator component", async ({ page }) => {
 });
 
 Then("the toolbar root uses the exported wrapper classes", async ({ page }) => {
-  const root = page.getByTestId(TOOLBAR_TEST_IDS.root);
+  const root = page.getByTestId(ToolbarTestId.Root);
   await expect(root).toBeVisible();
   await expectLocatorHasClasses(root, TOOLBAR_WRAPPER_CLASSES);
 });
 
 Then("the brand cluster test id is available for instrumentation", async ({ page }) => {
-  await expect(page.getByTestId(TOOLBAR_TEST_IDS.brandCluster)).toBeVisible();
+  await expect(page.getByTestId(ToolbarTestId.BrandCluster)).toBeVisible();
 });
 
 Then("the controls cluster includes the save indicator wrapper and workspace controls", async ({ page }) => {
-  const controlsCluster = page.getByTestId(TOOLBAR_TEST_IDS.controlsCluster);
+  const controlsCluster = page.getByTestId(ToolbarTestId.ControlsCluster);
   await expect(controlsCluster).toBeVisible();
 
-  const saveIndicatorWrapper = controlsCluster.getByTestId(TOOLBAR_TEST_IDS.saveIndicatorWrapper);
+  const saveIndicatorWrapper = controlsCluster.getByTestId(ToolbarTestId.SaveIndicatorWrapper);
   await expect(saveIndicatorWrapper).toBeVisible();
   await expect(saveIndicatorWrapper.getByTestId("save-indicator")).toBeVisible();
 
@@ -73,9 +73,9 @@ Then("the controls cluster includes the save indicator wrapper and workspace con
 });
 
 Then("each cluster reuses the exported layout class tokens", async ({ page }) => {
-  const brandCluster = page.getByTestId(TOOLBAR_TEST_IDS.brandCluster);
-  const controlsCluster = page.getByTestId(TOOLBAR_TEST_IDS.controlsCluster);
-  const saveIndicatorWrapper = page.getByTestId(TOOLBAR_TEST_IDS.saveIndicatorWrapper);
+  const brandCluster = page.getByTestId(ToolbarTestId.BrandCluster);
+  const controlsCluster = page.getByTestId(ToolbarTestId.ControlsCluster);
+  const saveIndicatorWrapper = page.getByTestId(ToolbarTestId.SaveIndicatorWrapper);
 
   await expectLocatorHasClasses(brandCluster, TOOLBAR_BRAND_CLUSTER_CLASSES);
   await expectLocatorHasClasses(controlsCluster, TOOLBAR_CONTROLS_CLUSTER_CLASSES);

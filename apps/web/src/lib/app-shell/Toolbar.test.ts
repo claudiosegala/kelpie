@@ -10,7 +10,7 @@ import {
   TOOLBAR_BRAND_CLUSTER_CLASSES,
   TOOLBAR_CONTROLS_CLUSTER_CLASSES,
   TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES,
-  TOOLBAR_TEST_IDS,
+  ToolbarTestId,
   TOOLBAR_WRAPPER_CLASSES
 } from "./toolbar.constants";
 
@@ -53,16 +53,16 @@ describe("Toolbar", () => {
   it("applies exported layout classes and test ids to clusters", () => {
     renderToolbar("2.0.0");
 
-    const root = screen.getByTestId(TOOLBAR_TEST_IDS.root);
+    const root = screen.getByTestId(ToolbarTestId.Root);
     expectElementHasClasses(root as HTMLElement, TOOLBAR_WRAPPER_CLASSES);
 
-    const brandCluster = screen.getByTestId(TOOLBAR_TEST_IDS.brandCluster);
+    const brandCluster = screen.getByTestId(ToolbarTestId.BrandCluster);
     expectElementHasClasses(brandCluster as HTMLElement, TOOLBAR_BRAND_CLUSTER_CLASSES);
 
-    const controlsCluster = screen.getByTestId(TOOLBAR_TEST_IDS.controlsCluster);
+    const controlsCluster = screen.getByTestId(ToolbarTestId.ControlsCluster);
     expectElementHasClasses(controlsCluster as HTMLElement, TOOLBAR_CONTROLS_CLUSTER_CLASSES);
 
-    const saveIndicatorWrapper = screen.getByTestId(TOOLBAR_TEST_IDS.saveIndicatorWrapper);
+    const saveIndicatorWrapper = screen.getByTestId(ToolbarTestId.SaveIndicatorWrapper);
     expectElementHasClasses(saveIndicatorWrapper as HTMLElement, TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES);
   });
 
