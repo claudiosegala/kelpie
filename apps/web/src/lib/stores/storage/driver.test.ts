@@ -64,6 +64,7 @@ describe("createLocalStorageDriver", () => {
   });
 
   it("no-ops when localStorage is unavailable", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("localStorage", undefined);
     const driver = createLocalStorageDriver(STORAGE_KEY);
 
@@ -71,6 +72,9 @@ describe("createLocalStorageDriver", () => {
 
     expect(() => driver.save(SAMPLE_SNAPSHOT)).not.toThrow();
     expect(() => driver.clear()).not.toThrow();
+
+    expect(warnSpy).toHaveBeenCalledTimes(3);
+    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: localStorage is not available");
   });
 
   it("subscribes to storage events and filters by key", () => {
@@ -96,6 +100,7 @@ describe("createLocalStorageDriver", () => {
 
   it("returns a noop unsubscribe when window is unavailable", () => {
     const originalWindow = globalThis.window;
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.stubGlobal("window", undefined);
     const driver = createLocalStorageDriver(STORAGE_KEY);
     const callback = vi.fn();
@@ -104,6 +109,8 @@ describe("createLocalStorageDriver", () => {
 
     expect(() => unsubscribe()).not.toThrow();
     expect(callback).not.toHaveBeenCalled();
+
+    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: window is not available");
 
     if (originalWindow) {
       vi.stubGlobal("window", originalWindow);

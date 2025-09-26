@@ -5,9 +5,19 @@
  * and swap implementations when new platforms are supported.
  */
 export function getWindow(): (Window & typeof globalThis) | null {
-  return typeof window === "undefined" ? null : window;
+  if (typeof window === "undefined") {
+    console.warn("Kelpie storage: window is not available");
+    return null;
+  }
+
+  return window;
 }
 
 export function getLocalStorage(): Storage | null {
-  return typeof localStorage === "undefined" ? null : localStorage;
+  if (typeof localStorage === "undefined") {
+    console.warn("Kelpie storage: localStorage is not available");
+    return null;
+  }
+
+  return localStorage;
 }
