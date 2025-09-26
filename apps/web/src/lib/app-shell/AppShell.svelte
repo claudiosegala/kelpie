@@ -56,7 +56,7 @@
   <main class={mainClasses} data-layout={layout}>
     {#if showEditor}
       <section class={stackedPanelClasses} aria-label={panelLabels.editor} data-active={showEditor} data-panel="editor">
-        <div class="flex h-full flex-col overflow-hidden">
+        <div class="h-full flex-1 flex-col overflow-hidden">
           <slot name="editor" />
         </div>
       </section>
@@ -68,7 +68,7 @@
         data-active={showPreview}
         data-panel="preview"
       >
-        <div class="flex h-full flex-col overflow-hidden">
+        <div class="h-full flex-1 flex-col overflow-hidden">
           <slot name="preview" />
         </div>
       </section>
@@ -80,7 +80,7 @@
         data-active={showSettings}
         data-panel="settings"
       >
-        <div class="flex h-full flex-col overflow-hidden">
+        <div class="h-full flex-1 flex-col overflow-hidden">
           <slot name="settings" />
         </div>
       </section>

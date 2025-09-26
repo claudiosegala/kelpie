@@ -1,4 +1,3 @@
-import { browser } from "$app/environment";
 import { readable, writable } from "svelte/store";
 import {
   type PanelId,
@@ -49,8 +48,6 @@ export function activatePanel(panel: PanelId): void {
 }
 
 export function startLayoutWatcher(query = "(max-width: 960px)"): () => void {
-  if (!browser) return () => undefined;
-
   const mediaQuery = window.matchMedia(query);
   const update = () => setLayout(mediaQuery.matches ? "mobile" : "desktop");
   update();

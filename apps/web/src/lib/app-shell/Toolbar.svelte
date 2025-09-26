@@ -69,72 +69,6 @@
     </div>
   </div>
 
-  <div class="navbar-center flex flex-1 items-center justify-center">
-    <div
-      class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
-      role="group"
-      aria-label="Select workspace mode"
-      data-testid="view-mode-toggle"
-    >
-      {#each viewOptions as option (option.id)}
-        <button
-          type="button"
-          class={viewButtonClasses(option.id)}
-          on:click={() => handleViewChange(option.id)}
-          aria-pressed={$shellState.viewMode === option.id}
-          aria-label={option.label}
-          title={option.label}
-          data-testid={`view-mode-${option.id}`}
-        >
-          {#if option.id === "editor-preview"}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              class="h-4 w-4"
-            >
-              <rect x="3.5" y="5.5" width="7" height="13" rx="1.5" stroke-width="1.5" />
-              <rect x="13.5" y="5.5" width="7" height="13" rx="1.5" stroke-width="1.5" />
-            </svg>
-          {:else if option.id === "preview-only"}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              class="h-4 w-4"
-            >
-              <path stroke-width="1.5" d="M3 12s3.5-5.5 9-5.5S21 12 21 12s-3.5 5.5-9 5.5S3 12 3 12Z" />
-              <circle cx="12" cy="12" r="2.5" stroke-width="1.5" />
-            </svg>
-          {:else}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              class="h-4 w-4"
-            >
-              <path
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.89 3.31.877 2.42 2.42a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.89 1.543-.877 3.31-2.42 2.42a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.89-3.31-.877-2.42-2.42a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35A1.724 1.724 0 0 0 4.68 7.803c-.89-1.543.877-3.31 2.42-2.42a1.724 1.724 0 0 0 2.572-1.066Z"
-              />
-              <path
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-              />
-            </svg>
-          {/if}
-        </button>
-      {/each}
-    </div>
-  </div>
-
   <div class="flex flex-1 flex-wrap items-center justify-end gap-3 sm:gap-4">
     {#if $shellState.layout === "mobile"}
       <div
@@ -203,7 +137,7 @@
       </div>
     {/if}
 
-    <div class="min-w-[9.5rem] sm:w-auto">
+    <div class="sm:w-auto">
       <SaveIndicator />
     </div>
 
