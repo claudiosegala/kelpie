@@ -94,17 +94,24 @@ Kelpie understands standard checklist syntax and a handful of extensions:
 
 ```
 /
-├── apps/kelpie      # SvelteKit application entrypoint
-├── packages/        # Shared libraries and UI components
-├── specs/           # Spec-driven design documents and executable specs
-├── README.md        # You're here!
-└── pnpm-lock.yaml   # Deterministic dependency lockfile
+├── apps/
+│   └── web/            # SvelteKit workspace that powers the Kelpie UI
+├── docs/               # Internal notes on testing gaps, improvements, etc.
+├── packages/
+│   └── prompt-library/ # Shared prompts and tooling that back the specs
+├── scripts/            # Development and CI helper scripts
+├── specs/              # Spec-driven design documents and executable specs
+├── package.json        # Workspace root manifest
+├── pnpm-workspace.yaml # pnpm workspace definition
+└── README.md           # You're here!
 ```
 
 Key directories:
 
-- [`apps/kelpie`](./apps/kelpie): SvelteKit app including routes, components, and assets.
-- [`packages`](./packages): Reusable packages (e.g., parser, UI primitives).
+- [`apps/web`](./apps/web): SvelteKit app including routes, components, and assets.
+- [`docs`](./docs): Living documentation for quality efforts and backlog curation.
+- [`packages`](./packages): Shared resources referenced by specs and tooling.
+- [`scripts`](./scripts): Automation used locally and in CI (formatting, specs, etc.).
 - [`specs`](./specs): Product and technical specs that guide development.
 
 ## 🛣 Roadmap
