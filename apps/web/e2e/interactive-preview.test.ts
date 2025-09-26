@@ -34,17 +34,13 @@ test.describe("interactive preview", () => {
   test("renders metadata badges for parsed tasks", async ({ page }) => {
     await loadDocument(page, "- [ ] Plan trip @due(2025-12-24) #travel #planning");
 
-    const taskCard = page
-      .locator("li", {
-        has: page.getByRole("checkbox", { name: "Toggle Plan trip" })
-      })
-      .first();
+    const taskCard = page.getByTestId("task-card").first();
 
     await expect(taskCard).toBeVisible();
     await expect(taskCard).toHaveAttribute("data-completed", "false");
-    await expect(taskCard.getByText("2025-12-24", { exact: true })).toBeVisible();
-    await expect(taskCard.getByText("#travel", { exact: true })).toBeVisible();
-    await expect(taskCard.getByText("#planning", { exact: true })).toBeVisible();
+    await expect(taskCard.getByTestId("task-due")).toHaveText(/2025-12-24/);
+    await expect(taskCard.getByTestId("task-hashtag").filter({ hasText: "#travel" })).toBeVisible();
+    await expect(taskCard.getByTestId("task-hashtag").filter({ hasText: "#planning" })).toBeVisible();
   });
 
   test("updates preview when editing the markdown document", async ({ page }) => {
@@ -55,22 +51,18 @@ test.describe("interactive preview", () => {
     const appendedLine = "\n- [ ] Capture inspiration @due(2025-08-15) #inbox";
     await editor.fill(`${original}${appendedLine}`);
 
-    const newTaskCard = page.locator("li", {
-      has: page.getByRole("checkbox", { name: "Toggle Capture inspiration" })
-    });
+    const newTaskCard = page.getByTestId("task-card").filter({ hasText: "Capture inspiration" }).first();
 
     await expect(newTaskCard).toBeVisible();
-    await expect(newTaskCard.getByText("Capture inspiration", { exact: false })).toBeVisible();
-    await expect(newTaskCard.getByText("2025-08-15", { exact: true })).toBeVisible();
-    await expect(newTaskCard.getByText("#inbox", { exact: true })).toBeVisible();
+    await expect(newTaskCard.getByTestId("task-title")).toContainText("Capture inspiration");
+    await expect(newTaskCard.getByTestId("task-due")).toHaveText(/2025-08-15/);
+    await expect(newTaskCard.getByTestId("task-hashtag").filter({ hasText: "#inbox" })).toBeVisible();
   });
 
   test("shows an empty state when no tasks are parsed", async ({ page }) => {
     await loadDocument(page, "");
 
-    const emptyState = page.getByText("No tasks parsed yet — start typing in the editor to see them here.", {
-      exact: true
-    });
+    const emptyState = page.getByTestId("tasks-empty-state");
 
     await expect(emptyState).toBeVisible();
   });
@@ -78,12 +70,10 @@ test.describe("interactive preview", () => {
   test("persists toggled tasks back into markdown", async ({ page }) => {
     await loadDocument(page, "- [ ] Verify persistence");
 
-    const checkbox = page.getByRole("checkbox", { name: "Toggle Verify persistence" });
+    const taskCard = page.getByTestId("task-card").filter({ hasText: "Verify persistence" }).first();
+    const checkbox = taskCard.getByTestId("task-checkbox");
     await checkbox.check();
 
-    const taskCard = page.locator("li", {
-      has: checkbox
-    });
     await expect(taskCard).toHaveAttribute("data-completed", "true");
 
     const storedMarkdown = await getStoredMarkdown(page);

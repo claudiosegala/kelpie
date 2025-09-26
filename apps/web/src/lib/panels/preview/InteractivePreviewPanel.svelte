@@ -70,7 +70,7 @@
 
   {#if view === "tasks"}
     {#if tasks.length === 0}
-      <div class="flex flex-1 items-center justify-center px-6">
+      <div class="flex flex-1 items-center justify-center px-6" data-testid="tasks-empty-state">
         <p
           class="rounded-full border border-dashed border-base-300/80 bg-base-100/80 px-6 py-3 text-sm text-base-content/60"
         >
@@ -78,7 +78,7 @@
         </p>
       </div>
     {:else}
-      <ul class="flex flex-1 flex-col gap-3 overflow-y-auto px-6 pb-6 pt-4">
+      <ul class="flex flex-1 flex-col gap-3 overflow-y-auto px-6 pb-6 pt-4" data-testid="tasks-list">
         {#each tasks as task (task.id)}
           {@const dueLabel = getDueLabel(task)}
           {@const hashtags = getHashtags(task)}
@@ -86,6 +86,7 @@
           <li
             class="rounded-2xl border border-base-300/70 bg-base-100/70 p-3 shadow-sm transition hover:border-primary/40 hover:bg-base-100"
             data-completed={task.checked}
+            data-testid="task-card"
           >
             <label class="group flex items-start gap-4">
               <span class="relative mt-1 flex h-5 w-5 items-center justify-center">
@@ -95,6 +96,8 @@
                   checked={task.checked}
                   on:change={() => handleToggle(task.id)}
                   aria-label={`Toggle ${task.title}`}
+                  data-testid="task-checkbox"
+                  data-task-id={task.id}
                 />
                 <span
                   class="pointer-events-none absolute inset-0 rounded-full border-2 border-base-content/30 bg-base-200/80 transition-all duration-200 peer-checked:border-primary peer-checked:bg-primary/90"
@@ -116,14 +119,16 @@
                     class={`text-base font-semibold leading-snug transition ${
                       task.checked ? "text-base-content/50 line-through" : "text-base-content"
                     }`}
+                    data-testid="task-title"
                   >
                     {task.title}
                   </p>
                   {#if hashtags.length > 0}
-                    <div class="flex flex-wrap justify-end gap-2">
+                    <div class="flex flex-wrap justify-end gap-2" data-testid="task-hashtags">
                       {#each hashtags as tag (tag)}
                         <span
                           class="badge badge-sm border-0 bg-base-300/70 text-[0.65rem] font-semibold uppercase tracking-wide text-base-content/70"
+                          data-testid="task-hashtag"
                         >
                           #{tag}
                         </span>
@@ -134,7 +139,7 @@
 
                 <div class="flex flex-wrap items-center gap-2 text-xs text-base-content/70 sm:text-sm">
                   {#if dueLabel}
-                    <span class="badge badge-sm border-0 bg-success/20 text-success-content/90">
+                    <span class="badge badge-sm border-0 bg-success/20 text-success-content/90" data-testid="task-due">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -150,7 +155,10 @@
                   {/if}
 
                   {#each otherTags as [key, value] (key)}
-                    <span class="badge badge-sm border border-base-300/70 bg-base-100/70 text-base-content/70">
+                    <span
+                      class="badge badge-sm border border-base-300/70 bg-base-100/70 text-base-content/70"
+                      data-testid="task-tag"
+                    >
                       <span class="font-semibold capitalize">{key}</span>
                       <span class="ml-1 text-base-content/60">{value}</span>
                     </span>
