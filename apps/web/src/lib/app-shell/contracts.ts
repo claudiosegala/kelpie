@@ -10,7 +10,11 @@ export type PanelId = "editor" | "preview" | "settings";
  * - `preview-only`: only the preview should be visible.
  * - `settings`: settings replace the main workspace.
  */
-export type ViewMode = "editor-preview" | "preview-only" | "settings";
+export enum ViewMode {
+  EditorPreview = "editor-preview",
+  PreviewOnly = "preview-only",
+  Settings = "settings"
+}
 
 /**
  * Shell layout state derived from viewport size.
@@ -36,16 +40,16 @@ export type ShellState = {
 };
 
 export function defaultPanelForMode(mode: ViewMode): PanelId {
-  if (mode === "settings") return "settings";
-  if (mode === "preview-only") return "preview";
+  if (mode === ViewMode.Settings) return "settings";
+  if (mode === ViewMode.PreviewOnly) return "preview";
   return "editor";
 }
 
 export function isPanelAllowedInMode(panel: PanelId, mode: ViewMode): boolean {
-  if (mode === "settings") {
+  if (mode === ViewMode.Settings) {
     return panel === "settings";
   }
-  if (mode === "preview-only") {
+  if (mode === ViewMode.PreviewOnly) {
     return panel === "preview";
   }
   return panel === "editor" || panel === "preview";

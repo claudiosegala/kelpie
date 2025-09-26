@@ -5,7 +5,8 @@ export { default as CodeEditorPanel } from "./panels/editor/CodeEditorPanel.svel
 export { default as InteractivePreviewPanel } from "./panels/preview/InteractivePreviewPanel.svelte";
 export { default as AppSettingsPanel } from "./panels/settings/AppSettingsPanel.svelte";
 
-export type { PanelId, ViewMode, ShellLayout, SaveStatus, SaveStatusKind } from "./app-shell/contracts";
+export { ViewMode } from "./app-shell/contracts";
+export type { PanelId, ShellLayout, SaveStatus, SaveStatusKind } from "./app-shell/contracts";
 export { shellState, setLayout, setViewMode, activatePanel, startLayoutWatcher } from "./stores/shell";
 export { saveStatus } from "./stores/persistence";
 

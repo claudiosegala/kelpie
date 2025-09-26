@@ -7,11 +7,13 @@
   import { setViewMode, shellState } from "$lib/stores/shell";
   import type { ViewMode } from "./contracts";
   import DockToggleButton from "./DockToggleButton.svelte";
+  import { ViewMode } from "./contracts";
+  import { getDockButtonClasses } from "./dockButtonClasses";
 
   const viewOptions: { id: ViewMode; label: string; Icon: typeof SplitViewIcon }[] = [
-    { id: "editor-preview", label: "Editor & preview", Icon: SplitViewIcon },
-    { id: "preview-only", label: "Preview", Icon: PreviewIcon },
-    { id: "settings", label: "Settings", Icon: SettingsIcon }
+    { id: ViewMode.EditorPreview, label: "Editor & preview", Icon: SplitViewIcon },
+    { id: ViewMode.PreviewOnly, label: "Preview", Icon: PreviewIcon },
+    { id: ViewMode.Settings, label: "Settings", Icon: SettingsIcon }
   ];
 
   function handleViewChange(id: ViewMode) {
