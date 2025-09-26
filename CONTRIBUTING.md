@@ -48,8 +48,11 @@ git config commit.gpgsign true   # optional but encouraged
 
 ### 4. Install dependencies
 
+### 2. Install dependencies
+
 ```bash
 pnpm install
+```
 
 # Optional: enable Husky hooks in your fork
 pnpm dlx husky init
@@ -83,8 +86,14 @@ pnpm test:unit:watch
 # Extract .feature files from /specs/*.md
 pnpm spec:extract
 
-# Run E2E tests manually (Chromium + WebKit)
+# Watch Markdown specs and re-extract automatically
+pnpm spec:extract:watch
+
+# Run local E2E tests (Chromium by default)
 pnpm test:e2e
+
+# Run the full browser matrix (Chromium + WebKit)
+pnpm test:e2e:all
 ```
 
 * E2E tests use **fixtures** (`apps/web/src/lib/fixtures/*.md`).
@@ -136,7 +145,7 @@ Commit the generated `.feature` files alongside the spec changes.
 Run manually:
 
 ```bash
-pnpm lint      # ESLint
+pnpm lint      # ESLint + Prettier cache via the web workspace
 pnpm format    # Prettier
 pnpm typecheck # Strict TypeScript
 ```
@@ -197,12 +206,12 @@ Dev-only, optional:
 
 ## 📖 Development guidelines
 
-* Programming Language: **TypeScript strict**
-* Backend Framework: *Not Applicable*
-* Frontend Framework: **SvelteKit + runes (Svelte 5)**
-* Storage: **Svelte stores** + localStorage (client-side only)
-* Lint: ESLint + Prettier, run locally or via CI
-* Tests: unit fast (auto/CI), E2E slower (manual/CI optional)
+- Programming Language: **TypeScript strict**
+- Backend Framework: _Not Applicable_
+- Frontend Framework: **SvelteKit + runes (Svelte 5)**
+- Storage: **Svelte stores** + localStorage (client-side only)
+- Lint: ESLint + Prettier, run locally or via CI
+- Tests: unit fast (auto/CI), E2E slower (manual/CI optional)
 
 ---
 

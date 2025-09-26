@@ -8,11 +8,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v3
-        with: { version: 9 }
+        with: { version: 10.17.1 }
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'pnpm' }
+        with: { node-version: 20, cache: "pnpm" }
       - run: pnpm install --frozen-lockfile
+      - name: Restore lint caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/eslint
+            .cache/prettier
+          key: lint-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml') }}
+          restore-keys: |
+            lint-${{ runner.os }}-
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test:unit
-      - run: pnpm -C apps/web build
+      - run: pnpm build
