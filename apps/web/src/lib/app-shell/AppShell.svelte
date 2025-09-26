@@ -37,47 +37,49 @@
   };
 </script>
 
-<div class="bg-base-200/80 text-base-content flex min-h-screen flex-col" data-layout={layout} data-mode={viewMode}>
+<div class="flex min-h-screen flex-col bg-base-200 text-base-content" data-layout={layout} data-mode={viewMode}>
   <Toolbar {version} />
   <main
-    class={`grid flex-1 gap-4 p-4 transition-all duration-300 ${
-      layout === "desktop" ? "grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" : "grid-cols-1"
+    class={`grid w-full flex-1 gap-6 px-4 pb-8 pt-6 transition-all duration-300 sm:px-6 lg:mx-auto lg:max-w-6xl lg:px-8 ${
+      layout === "desktop" && viewMode !== "settings"
+        ? "lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]"
+        : "grid-cols-1"
     }`}
     data-layout={layout}
   >
     <section
-      class={`card border-base-300/60 bg-base-100 h-full overflow-hidden border shadow-sm transition-all duration-300 ${
-        showEditor ? "opacity-100" : "opacity-0"
+      class={`flex h-full flex-col overflow-hidden rounded-3xl border border-base-300/70 bg-base-100/90 shadow-lg shadow-base-300/30 backdrop-blur transition-all duration-300 ${
+        showEditor ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       aria-label={panelLabels.editor}
       hidden={!showEditor}
       data-panel="editor"
     >
-      <div class="card-body h-full gap-0 overflow-hidden p-0">
+      <div class="flex h-full flex-col overflow-hidden">
         <slot name="editor" />
       </div>
     </section>
     <section
-      class={`card border-base-300/60 bg-base-100 h-full overflow-hidden border shadow-sm transition-all duration-300 ${
-        showPreview ? "opacity-100" : "opacity-0"
+      class={`flex h-full flex-col overflow-hidden rounded-3xl border border-base-300/70 bg-base-100/90 shadow-lg shadow-base-300/30 backdrop-blur transition-all duration-300 ${
+        showPreview ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       aria-label={panelLabels.preview}
       hidden={!showPreview}
       data-panel="preview"
     >
-      <div class="card-body h-full gap-0 overflow-hidden p-0">
+      <div class="flex h-full flex-col overflow-hidden">
         <slot name="preview" />
       </div>
     </section>
     <section
-      class={`card border-base-300/60 bg-base-100 h-full overflow-hidden border shadow-sm transition-all duration-300 ${
-        showSettings ? "opacity-100" : "opacity-0"
+      class={`flex h-full flex-col overflow-hidden rounded-3xl border border-base-300/70 bg-base-100/90 shadow-lg shadow-base-300/30 backdrop-blur transition-all duration-300 ${
+        showSettings ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
       aria-label={panelLabels.settings}
       hidden={!showSettings}
       data-panel="settings"
     >
-      <div class="card-body h-full gap-0 overflow-hidden p-0">
+      <div class="flex h-full flex-col overflow-hidden">
         <slot name="settings" />
       </div>
     </section>

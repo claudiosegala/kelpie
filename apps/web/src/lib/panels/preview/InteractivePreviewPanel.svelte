@@ -11,115 +11,126 @@
   function handleToggle(id: string) {
     dispatch("toggleTask", { id });
   }
+
+  function formatTagValue(value: string | string[]): string {
+    return Array.isArray(value) ? value.join(", ") : value;
+  }
+
+  function getDueLabel(task: Task): string | undefined {
+    const due = task.tags.due;
+    if (!due) return undefined;
+    return formatTagValue(due);
+  }
+
+  function getHashtags(task: Task): string[] {
+    const hashtags = task.tags.hashtags;
+    if (!hashtags) return [];
+    return Array.isArray(hashtags) ? hashtags : [hashtags];
+  }
+
+  function getOtherTags(task: Task): [string, string][] {
+    return Object.entries(task.tags)
+      .filter(([key]) => key !== "hashtags" && key !== "due")
+      .map(([key, value]) => [key, formatTagValue(value)]);
+  }
 </script>
 
-<section class="preview-panel">
-  <header>
-    <h2>✅ Parsed Tasks</h2>
+<section class="flex h-full flex-col bg-base-200/40">
+  <header class="flex items-center justify-between border-b border-base-300/70 px-6 py-5">
+    <h2 class="text-xs font-semibold uppercase tracking-[0.2em] text-base-content/60">Tasks</h2>
   </header>
 
   {#if tasks.length === 0}
-    <p class="empty">No tasks parsed yet.</p>
+    <div class="flex flex-1 items-center justify-center px-6">
+      <p
+        class="rounded-full border border-dashed border-base-300/80 bg-base-100/80 px-6 py-3 text-sm text-base-content/60"
+      >
+        No tasks parsed yet — start typing in the editor to see them here.
+      </p>
+    </div>
   {:else}
-    <ul class="task-list">
+    <ul class="flex flex-1 flex-col gap-3 overflow-y-auto px-6 pb-6 pt-4">
       {#each tasks as task (task.id)}
-        <li class="task-item {task.checked ? 'done' : ''}">
-          <label>
-            <input type="checkbox" checked={task.checked} on:change={() => handleToggle(task.id)} />
-            <span class="title">{task.title}</span>
-            {#if Object.keys(task.tags).length > 0}
-              <span class="tags">
-                {#each Object.entries(task.tags) as [k, v] (k)}
-                  <span class="tag">
-                    {k}: {Array.isArray(v) ? v.join(",") : v}
+        {@const dueLabel = getDueLabel(task)}
+        {@const hashtags = getHashtags(task)}
+        {@const otherTags = getOtherTags(task)}
+        <li
+          class="rounded-2xl border border-base-300/70 bg-base-100/70 p-3 shadow-sm transition hover:border-primary/40 hover:bg-base-100"
+          data-completed={task.checked}
+        >
+          <label class="group flex items-start gap-4">
+            <span class="relative mt-1 flex h-5 w-5 items-center justify-center">
+              <input
+                class="peer absolute inset-0 h-5 w-5 cursor-pointer appearance-none rounded-full"
+                type="checkbox"
+                checked={task.checked}
+                on:change={() => handleToggle(task.id)}
+                aria-label={`Toggle ${task.title}`}
+              />
+              <span
+                class="pointer-events-none absolute inset-0 rounded-full border-2 border-base-content/30 bg-base-200/80 transition-all duration-200 peer-checked:border-primary peer-checked:bg-primary/90"
+              ></span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                class="pointer-events-none relative hidden h-3 w-3 text-base-100 peer-checked:block"
+              >
+                <path stroke-width="2" d="m5 13 4 4L19 7" />
+              </svg>
+            </span>
+
+            <div class="flex flex-1 flex-col gap-2">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <p
+                  class={`text-base font-semibold leading-snug transition ${
+                    task.checked ? "text-base-content/50 line-through" : "text-base-content"
+                  }`}
+                >
+                  {task.title}
+                </p>
+                {#if hashtags.length > 0}
+                  <div class="flex flex-wrap justify-end gap-2">
+                    {#each hashtags as tag (tag)}
+                      <span
+                        class="badge badge-sm border-0 bg-base-300/70 text-[0.65rem] font-semibold uppercase tracking-wide text-base-content/70"
+                      >
+                        #{tag}
+                      </span>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 text-xs text-base-content/70 sm:text-sm">
+                {#if dueLabel}
+                  <span class="badge badge-sm border-0 bg-success/20 text-success-content/90">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      class="mr-1 h-3 w-3"
+                    >
+                      <circle cx="12" cy="12" r="7" stroke-width="1.5" />
+                      <path stroke-width="1.5" d="M12 8v4l2.5 1.5" />
+                    </svg>
+                    {dueLabel}
+                  </span>
+                {/if}
+
+                {#each otherTags as [key, value] (key)}
+                  <span class="badge badge-sm border border-base-300/70 bg-base-100/70 text-base-content/70">
+                    <span class="font-semibold capitalize">{key}</span>
+                    <span class="ml-1 text-base-content/60">{value}</span>
                   </span>
                 {/each}
-              </span>
-            {/if}
+              </div>
+            </div>
           </label>
         </li>
       {/each}
     </ul>
   {/if}
 </section>
-
-<style>
-  .preview-panel {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 1rem;
-    gap: 0.75rem;
-    background: #f8fafc;
-  }
-
-  header {
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 0.5rem;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #0f172a;
-  }
-
-  .empty {
-    color: #64748b;
-    font-style: italic;
-  }
-
-  .task-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    overflow-y: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .task-item {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    transition: background 0.2s ease;
-  }
-
-  .task-item.done .title {
-    text-decoration: line-through;
-    color: #94a3b8;
-  }
-
-  label {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  input[type="checkbox"] {
-    transform: scale(1.1);
-  }
-
-  .title {
-    flex: 1;
-  }
-
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .tag {
-    background: #eef2ff;
-    border: 1px solid #c7d2fe;
-    color: #3730a3;
-    font-size: 0.7rem;
-    padding: 0.15rem 0.4rem;
-    border-radius: 0.25rem;
-  }
-</style>
