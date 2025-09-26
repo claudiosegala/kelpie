@@ -240,6 +240,53 @@ describe("createStorageEngine", () => {
     expect(get(engine.settings)).toEqual(updated.settings);
   });
 
+  it("persists document mutations when returning a new snapshot reference", () => {
+    const baseline = createSnapshot();
+    const nextDocument = {
+      id: "doc-123",
+      title: "New Doc",
+      content: "Hello world",
+      createdAt: "2024-01-01T00:00:00.000Z",
+      updatedAt: "2024-01-01T00:00:00.000Z"
+    } as const;
+
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver });
+    const changed = engine.update((snapshot) => ({
+      ...snapshot,
+      index: [
+        ...snapshot.index,
+        {
+          id: nextDocument.id,
+          title: nextDocument.title,
+          createdAt: nextDocument.createdAt,
+          updatedAt: nextDocument.updatedAt,
+          deletedAt: null,
+          purgeAfter: null
+        }
+      ],
+      documents: {
+        ...snapshot.documents,
+        [nextDocument.id]: nextDocument
+      }
+    }));
+
+    expect(changed).toBe(true);
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
+    expect(savedSnapshot.documents[nextDocument.id]).toEqual(nextDocument);
+    expect(savedSnapshot.index).toContainEqual({
+      id: nextDocument.id,
+      title: nextDocument.title,
+      createdAt: nextDocument.createdAt,
+      updatedAt: nextDocument.updatedAt,
+      deletedAt: null,
+      purgeAfter: null
+    });
+    expect(get(engine.snapshot).documents[nextDocument.id]).toEqual(nextDocument);
+  });
+
   it("does not persist when the updater returns the current snapshot", () => {
     const baseline = createSnapshot();
     loadSpy.mockReturnValue(baseline);
@@ -266,6 +313,59 @@ describe("createStorageEngine", () => {
     ).toThrowError("storage.update must return a snapshot");
     expect(get(engine.snapshot)).toEqual(baseline);
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it("updates stores for in-place document mutations without persisting", () => {
+    const baseline = createSnapshot({
+      index: [
+        {
+          id: "doc-123",
+          title: "Doc",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z",
+          deletedAt: null,
+          purgeAfter: null
+        }
+      ],
+      documents: {
+        "doc-123": {
+          id: "doc-123",
+          title: "Doc",
+          content: "Initial",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          updatedAt: "2024-01-01T00:00:00.000Z"
+        }
+      }
+    });
+
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver });
+    const changed = engine.update((snapshot) => {
+      const entry = snapshot.index[0];
+      const document = snapshot.documents["doc-123"];
+
+      entry.title = "Renamed";
+      entry.updatedAt = "2024-01-02T00:00:00.000Z";
+      document.title = "Renamed";
+      document.content = "Updated";
+      document.updatedAt = "2024-01-02T00:00:00.000Z";
+
+      return snapshot;
+    });
+
+    expect(changed).toBe(false);
+    expect(saveSpy).not.toHaveBeenCalled();
+    const snapshot = get(engine.snapshot);
+    expect(snapshot.index[0]).toMatchObject({
+      title: "Renamed",
+      updatedAt: "2024-01-02T00:00:00.000Z"
+    });
+    expect(snapshot.documents["doc-123"]).toMatchObject({
+      title: "Renamed",
+      content: "Updated",
+      updatedAt: "2024-01-02T00:00:00.000Z"
+    });
   });
 
   it("resets the config store to default values", () => {
