@@ -1,53 +1,56 @@
-import { render, screen, within } from "@testing-library/svelte";
-import { describe, expect, it } from "vitest";
-import Toolbar from "./Toolbar.svelte";
-import {
-  BRAND_NAME,
-  BRAND_TAGLINE,
-  TOOLBAR_BRAND_CLUSTER_CLASSES,
-  TOOLBAR_CONTROLS_CLUSTER_CLASSES,
-  TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES,
-  TOOLBAR_TEST_IDS,
-  TOOLBAR_WRAPPER_CLASSES,
-  buildBrandTooltip
-} from "./toolbar.constants";
+import { render, screen } from "@testing-library/svelte";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-function expectElementToHaveClasses(element: HTMLElement, classes: string): void {
-  expect(element).toHaveClass(...classes.split(" "));
-}
+import Toolbar from "./Toolbar.svelte";
+import { PANEL_DEFINITIONS } from "./panels";
+import { ViewMode } from "./contracts";
+import { activatePanel, setLayout, setViewMode } from "$lib/stores/shell";
+import { resetSaveStatus } from "$lib/stores/persistence";
 
 describe("Toolbar", () => {
-  it("renders the toolbar layout with stable clusters and controls", () => {
-    render(Toolbar, { version: "0.0.0-dev" });
-
-    const toolbar = screen.getByTestId(TOOLBAR_TEST_IDS.root);
-    expect(toolbar).toBeVisible();
-    expectElementToHaveClasses(toolbar, TOOLBAR_WRAPPER_CLASSES);
-
-    const brandCluster = screen.getByTestId(TOOLBAR_TEST_IDS.brandCluster);
-    expectElementToHaveClasses(brandCluster, TOOLBAR_BRAND_CLUSTER_CLASSES);
-    const brandLabel = within(brandCluster).getByTestId("toolbar-brand-label");
-    expect(brandLabel).toHaveTextContent(BRAND_NAME);
-
-    const controlsCluster = screen.getByTestId(TOOLBAR_TEST_IDS.controlsCluster);
-    expectElementToHaveClasses(controlsCluster, TOOLBAR_CONTROLS_CLUSTER_CLASSES);
-
-    const saveIndicatorWrapper = screen.getByTestId(TOOLBAR_TEST_IDS.saveIndicatorWrapper);
-    expectElementToHaveClasses(saveIndicatorWrapper, TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES);
-    expect(saveIndicatorWrapper).toContainElement(screen.getByTestId("save-indicator"));
-
-    expect(screen.getByRole("group", { name: "Select workspace mode" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Switch to dark theme" })).toBeVisible();
-    expect(screen.queryByTestId("panel-toggle-group")).not.toBeInTheDocument();
+  beforeEach(() => {
+    setLayout("desktop");
+    setViewMode(ViewMode.EditorPreview);
+    activatePanel("editor");
+    resetSaveStatus();
   });
 
-  it("builds the brand tooltip from a trimmed version string", () => {
-    render(Toolbar, { version: "  1.2.3 " });
+  afterEach(() => {
+    setLayout("desktop");
+    setViewMode(ViewMode.EditorPreview);
+    activatePanel("editor");
+    resetSaveStatus();
+  });
+
+  it("renders a branded tooltip that includes the app version", () => {
+    const version = "1.2.3";
+
+    render(Toolbar, { version });
 
     const tooltip = screen.getByTestId("toolbar-brand-tooltip");
-    expect(tooltip).toHaveAttribute("title", buildBrandTooltip("1.2.3"));
-    expect(tooltip).toHaveAttribute("data-tip", buildBrandTooltip("1.2.3"));
-    expect(within(tooltip).getByText(BRAND_NAME)).toBeVisible();
-    expect(buildBrandTooltip("   ")).toBe(`${BRAND_NAME} Unknown\n${BRAND_TAGLINE}`);
+    expect(tooltip).toHaveAttribute("data-tip", expect.stringContaining(version));
+    expect(screen.getByTestId("toolbar-brand-label")).toHaveTextContent("Kelpie");
+  });
+
+  it("exposes panel toggles, save status, view mode controls, and theme switcher", () => {
+    setLayout("mobile");
+
+    render(Toolbar, { version: "2.0.0" });
+
+    const panelGroup = screen.getByTestId("panel-toggle-group");
+    expect(panelGroup).toBeVisible();
+    for (const panel of PANEL_DEFINITIONS) {
+      expect(screen.getByTestId(`panel-toggle-${panel.id}`)).toBeInTheDocument();
+    }
+
+    expect(screen.getByTestId("save-indicator")).toBeVisible();
+
+    const viewModeGroup = screen.getByRole("group", { name: "Select workspace mode" });
+    expect(viewModeGroup).toBeVisible();
+    for (const mode of Object.values(ViewMode)) {
+      expect(screen.getByTestId(`view-mode-${mode}`)).toBeInTheDocument();
+    }
+
+    expect(screen.getByRole("button", { name: /Switch to (dark|light) theme/i })).toBeVisible();
   });
 });

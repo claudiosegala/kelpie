@@ -40,13 +40,13 @@ describe("PanelToggleGroup", () => {
 
     const group = screen.getByRole("group", { name: "Select active panel" });
     const buttons = within(group).getAllByRole("button");
-    expect(buttons).toHaveLength(PANEL_ORDER.length);
+    expect(buttons).toHaveLength(PANEL_METADATA.length);
     const state = get(shellState);
 
-    for (const panel of PANEL_ORDER) {
-      const button = within(group).getByRole("button", { name: panelLabel(panel) });
+    for (const { id } of PANEL_METADATA) {
+      const button = within(group).getByRole("button", { name: panelLabel(id) });
       expect(button).toBeVisible();
-      expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === panel));
+      expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === id));
     }
   });
 
