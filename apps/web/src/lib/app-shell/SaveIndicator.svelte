@@ -48,14 +48,10 @@
     label: string;
     tone: ToneClasses;
     tooltip: string;
-    badgeClasses: string;
+    isSaving: boolean;
     formattedTimestamp?: string;
     ariaLabel: string;
   };
-
-  function buildBadgeClasses(baseClasses: string, isSaving: boolean): string {
-    return ["indicator", baseClasses, isSaving ? "indicator--saving animate-pulse" : ""].filter(Boolean).join(" ");
-  }
 
   function formatSavedTimestamp(status: SaveStatus): string | undefined {
     if (status.kind !== "saved" || status.timestamp == null) {
@@ -86,7 +82,7 @@
       label: status.message,
       tone,
       tooltip,
-      badgeClasses: buildBadgeClasses(tone.badge, isSaving),
+      isSaving,
       formattedTimestamp,
       ariaLabel: buildAriaLabel(status.message, tooltip)
     };
@@ -103,7 +99,9 @@
 >
   <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
   <span
-    class={indicatorState.badgeClasses}
+    class={`indicator ${indicatorState.tone.badge}`}
+    class:indicator--saving={indicatorState.isSaving}
+    class:animate-pulse={indicatorState.isSaving}
     data-kind={indicatorState.kind}
     data-testid="save-indicator"
     aria-live="polite"
