@@ -61,6 +61,13 @@ importers:
         version: 8.44.1(eslint@9.36.0(jiti@2.6.0))(typescript@5.9.2)
 
   apps/web:
+    dependencies:
+      marked:
+        specifier: ^15.0.11
+        version: 15.0.11
+      sanitize-html:
+        specifier: ^2.13.0
+        version: 2.13.0
     devDependencies:
       '@cucumber/cucumber':
         specifier: 12.2.0
