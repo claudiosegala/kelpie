@@ -48,19 +48,29 @@ the workspace.
 
 ## Structure
 
+- Layout utility tokens for the wrapper, brand cluster, controls cluster, and
+  save indicator wrapper live in `toolbar.constants.ts` so Tailwind class lists
+  stay co-located with other toolbar primitives.
 - `<header>` wrapper uses a sticky position at the top with slight background
   transparency and blur so content scrolls beneath it without losing contrast.
-- Left cluster: product name (“Kelpie”) with tooltip showing version and tagline.
-- Right cluster (`flex-1` container):
+- Left cluster renders the `ToolbarBrand` subcomponent which encapsulates all
+  branding copy, tooltip composition, and typography styles. The cluster is
+  addressable via `data-testid="toolbar-brand-cluster"` for instrumentation.
+- Right cluster (`flex-1` container) is exported as
+  `TOOLBAR_CONTROLS_CLUSTER_CLASSES` and carries `data-testid="toolbar-controls-cluster"`:
   - `PanelToggleGroup` (renders only when layout is mobile via its own logic).
-  - `SaveIndicator` contained in a width-constrained wrapper for stability.
+  - `SaveIndicator` contained in a width-constrained wrapper for stability and
+    labeled with `data-testid="toolbar-save-indicator-wrapper"`.
   - `ViewModeToggleButton` for switching between editor/preview/settings modes.
   - `ThemeToggleButton` for switching between light/dark themes.
 
 ## Behavior
 
-- Branding tooltip concatenates the provided `version` prop with descriptive
-  copy; this tooltip appears on hover/focus via DaisyUI `tooltip` classes.
+- Branding tooltip is derived by `ToolbarBrand` via the shared
+  `buildBrandTooltip(version)` helper which trims input and falls back to
+  "Unknown" when the string is empty. The tooltip appears on hover/focus via
+  DaisyUI `tooltip` classes and is duplicated in the `title` attribute for
+  accessibility.
 - `PanelToggleGroup` subscribes to shell layout state and only renders controls
   when mobile; toolbar always renders the component so desktop markup stays
   consistent.
@@ -77,8 +87,8 @@ the workspace.
 
 - Header uses semantic `<header>` element and keeps interactive controls within
   accessible buttons.
-- Branding tooltip content is available via `data-tip` and native `title`,
-  ensuring screen readers announce version and description when focused.
+- `ToolbarBrand` duplicates tooltip content in both `data-tip` and `title`
+  attributes so screen readers announce version and description when focused.
 - Save indicator uses `aria-live="polite"` and `role="status"` for updates,
   enabling non-visual users to hear state changes without focus theft.
 - Toggle buttons expose `aria-label`, `aria-pressed`, and `role="group"` where
@@ -86,7 +96,8 @@ the workspace.
 
 ## Assumptions
 
-- `version` prop is always a non-empty string supplied by the shell route.
+- `version` prop is supplied by the shell route and may occasionally be empty;
+  `ToolbarBrand` guards against blanks when generating tooltip text.
 - Layout detection (desktop vs. mobile) is fully owned by shell stores and is
   trustworthy when deciding whether `PanelToggleGroup` should show.
 - Theme store only supports two themes (light/dark) today; button labels reflect
@@ -97,6 +108,22 @@ the workspace.
 - Surface contextual help and onboarding links once the information architecture is ready.
 - Provide toolbar personalization so teams can pin additional controls without code changes.
 - Localize tooltip copy and control labels once i18n infrastructure lands.
+
+## Maintainability Considerations
+
+- Shared constants keep branding strings in `toolbar.constants.ts` so copy edits
+  land in one place and Svelte components stay focused on layout concerns.
+- `ToolbarBrand` isolates tooltip formatting logic, ensuring downstream
+  refactors or localization can swap implementations without touching
+  `Toolbar.svelte`.
+- Toolbar composition favors declarative stacking of imported components instead
+  of inline helpers, so future additions (e.g., help menus) can be inserted by
+  adding one more component import.
+- Layout class tokens and testing IDs are centralized in
+  `toolbar.constants.ts`, keeping styling, instrumentation, and tests aligned
+  without string duplication inside the Svelte markup.
+- `TOOLBAR_TEST_IDS` expose stable selectors so unit tests can target
+  high-level clusters without depending on specific DOM structures.
 
 ## Test Scenarios (Gherkin)
 
@@ -125,6 +152,11 @@ Feature: Toolbar interactions
     When I toggle the theme from the toolbar
     Then the document theme should be "dark"
     And the theme toggle label reads "Switch to light theme"
+
+  Scenario: Toolbar exposes stable layout clusters
+    Then the toolbar root uses the exported wrapper classes
+    And the brand cluster test id is available for instrumentation
+    And the controls cluster includes the save indicator wrapper and workspace controls
 
   Scenario: Panel toggle group only appears on mobile layouts
     When I resize the viewport to "mobile"

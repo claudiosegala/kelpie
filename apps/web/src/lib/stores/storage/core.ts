@@ -1,5 +1,6 @@
 import { STORAGE_SCHEMA_VERSION } from "./constants";
 import { createDefaultConfiguration, createInitialSnapshot } from "./defaults";
+import { appendAuditEntries, createAuditEntry } from "./audit";
 import type { StorageDriver } from "./driver";
 import {
   captureHistorySnapshot,
@@ -14,6 +15,7 @@ import {
   type HistoryTimelineView,
   type HistoryUndoContext
 } from "./history";
+import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
 import type {
   HistoryEntry,
@@ -57,14 +59,45 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
   const now = options.now ?? (() => new Date().toISOString());
   const broadcast = options.broadcast ?? (() => {});
 
-  const loadedSnapshot = driver.load() ?? createInitialSnapshot();
+  let corruptionAudit: ReturnType<typeof createAuditEntry> | null = null;
+  const loadedSnapshot =
+    driver.load({
+      onCorruption(error) {
+        const metadata: Record<string, unknown> = {
+          reason: error.reason
+        };
+
+        if (error.expectedChecksum || error.actualChecksum) {
+          const checksum: Record<string, string> = {};
+          if (error.expectedChecksum) {
+            checksum.expected = error.expectedChecksum;
+          }
+          if (error.actualChecksum) {
+            checksum.actual = error.actualChecksum;
+          }
+          metadata.checksum = checksum;
+        }
+
+        corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+      }
+    }) ?? createInitialSnapshot();
+
   const migrationResult = runMigrations(loadedSnapshot, STORAGE_SCHEMA_VERSION, { now });
 
-  if (migrationResult.applied.length) {
-    driver.save(migrationResult.snapshot);
+  let initialSnapshot = migrationResult.snapshot;
+
+  if (corruptionAudit) {
+    const nextAudit = appendAuditEntries(initialSnapshot, corruptionAudit);
+    initialSnapshot = { ...initialSnapshot, audit: nextAudit } satisfies StorageSnapshot;
   }
 
-  const initialSnapshot = migrationResult.snapshot;
+  const shouldPersist = migrationResult.applied.length > 0 || Boolean(corruptionAudit);
+
+  if (shouldPersist) {
+    const prepared = normaliseSnapshotForPersistence(initialSnapshot, { now });
+    driver.save(prepared.snapshot);
+    initialSnapshot = prepared.snapshot;
+  }
 
   let currentSnapshot = initialSnapshot;
   let historyCache: HistoryCache = createHistoryCache(initialSnapshot);
@@ -90,17 +123,24 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
     { persist = false, emitBroadcast = false }: { persist?: boolean; emitBroadcast?: boolean } = {}
   ): boolean {
     const previous = currentSnapshot;
-    const changed = nextSnapshot !== previous;
-    const historyChanged = nextSnapshot.history !== previous.history;
+    let candidate = nextSnapshot;
 
-    if (persist && changed) {
-      driver.save(nextSnapshot);
+    if (persist && candidate !== previous) {
+      const prepared = normaliseSnapshotForPersistence(candidate, { now });
+      candidate = prepared.snapshot;
     }
 
-    currentSnapshot = nextSnapshot;
+    const changed = candidate !== previous;
+    const historyChanged = candidate.history !== previous.history;
+
+    if (persist && changed) {
+      driver.save(candidate);
+    }
+
+    currentSnapshot = candidate;
 
     if (historyChanged) {
-      historyCache = createHistoryCache(nextSnapshot);
+      historyCache = createHistoryCache(candidate);
     }
 
     notify();

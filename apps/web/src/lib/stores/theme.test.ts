@@ -17,14 +17,14 @@ describe("theme store", () => {
     const setAttributeSpy = vi.spyOn(document.documentElement, "setAttribute");
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
-    const { theme, toggleTheme } = await import("./theme");
+    const { Theme, theme, toggleTheme } = await import("./theme");
 
-    expect(get(theme)).toBe("light");
+    expect(get(theme)).toBe(Theme.Light);
     expect(setAttributeSpy).not.toHaveBeenCalled();
     expect(setItemSpy).not.toHaveBeenCalled();
 
     toggleTheme();
-    expect(get(theme)).toBe("dark");
+    expect(get(theme)).toBe(Theme.Dark);
     expect(setAttributeSpy).not.toHaveBeenCalled();
     expect(setItemSpy).not.toHaveBeenCalled();
 
@@ -39,17 +39,17 @@ describe("theme store", () => {
     const setAttributeSpy = vi.spyOn(document.documentElement, "setAttribute");
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
-    const { theme, toggleTheme } = await import("./theme");
+    const { Theme, theme, toggleTheme } = await import("./theme");
 
-    expect(get(theme)).toBe("dark");
-    expect(setAttributeSpy).toHaveBeenCalledWith("data-theme", "dark");
-    expect(setItemSpy).toHaveBeenCalledWith(THEME_STORAGE_KEY, "dark");
+    expect(get(theme)).toBe(Theme.Dark);
+    expect(setAttributeSpy).toHaveBeenCalledWith("data-theme", Theme.Dark);
+    expect(setItemSpy).toHaveBeenCalledWith(THEME_STORAGE_KEY, Theme.Dark);
 
     toggleTheme();
 
-    expect(get(theme)).toBe("light");
-    expect(setAttributeSpy).toHaveBeenLastCalledWith("data-theme", "light");
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("light");
+    expect(get(theme)).toBe(Theme.Light);
+    expect(setAttributeSpy).toHaveBeenLastCalledWith("data-theme", Theme.Light);
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe(Theme.Light);
 
     setAttributeSpy.mockRestore();
     setItemSpy.mockRestore();
@@ -59,8 +59,8 @@ describe("theme store", () => {
     vi.doMock("$app/environment", () => ({ browser: true }));
     localStorage.setItem(THEME_STORAGE_KEY, "sepia");
 
-    const { theme } = await import("./theme");
+    const { Theme, theme } = await import("./theme");
 
-    expect(get(theme)).toBe("light");
+    expect(get(theme)).toBe(Theme.Light);
   });
 });

@@ -8,7 +8,10 @@ const BASE_CONFIG = {
   historyRetentionDays: 7,
   historyEntryCap: 50,
   auditEntryCap: 20,
-  softDeleteRetentionDays: 7
+  softDeleteRetentionDays: 7,
+  quotaWarningBytes: 5_000,
+  quotaHardLimitBytes: 10_000,
+  gcIdleTriggerMs: 30_000
 } as const;
 
 const BASE_SETTINGS = {
