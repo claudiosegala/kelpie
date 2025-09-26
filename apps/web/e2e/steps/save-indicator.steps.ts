@@ -11,6 +11,9 @@ type SaveStatusUpdate = {
 };
 
 const SAVE_INDICATOR_TEST_ID = "save-indicator";
+const SAVE_INDICATOR_TOOLTIP_TEST_ID = "save-indicator-tooltip";
+const SAVE_INDICATOR_LABEL_TEST_ID = "save-indicator-label";
+const SAVE_INDICATOR_TIMESTAMP_TEST_ID = "save-indicator-timestamp";
 
 let currentSaveStatusKind: SaveStatusKind = "idle";
 let lastTimestampIso: string | null = null;
@@ -38,7 +41,15 @@ async function expectClasses(locator: Locator, expectedClasses: readonly string[
 }
 
 function tooltipLocator(page: Page) {
-  return indicatorLocator(page).locator("xpath=ancestor-or-self::*[@data-tip]").first();
+  return page.getByTestId(SAVE_INDICATOR_TOOLTIP_TEST_ID);
+}
+
+function indicatorLabelLocator(page: Page) {
+  return indicatorLocator(page).getByTestId(SAVE_INDICATOR_LABEL_TEST_ID);
+}
+
+function indicatorTimestampLocator(page: Page) {
+  return indicatorLocator(page).getByTestId(SAVE_INDICATOR_TIMESTAMP_TEST_ID);
 }
 
 async function loadAppShell(page: Page): Promise<void> {
@@ -109,7 +120,7 @@ When("the save status is updated to {string}", async ({ page }, kind: string) =>
 Then("the indicator shows {string} with a pulsing badge", async ({ page }, label: string) => {
   const indicator = indicatorLocator(page);
   await expect(indicator).toHaveAttribute("data-kind", currentSaveStatusKind);
-  await expect(indicator.getByText(label, { exact: true })).toBeVisible();
+  await expect(indicatorLabelLocator(page)).toHaveText(label);
   const badge = badgeLocator(page);
   await expectClasses(badge, ["badge", "animate-pulse"]);
 });
@@ -136,7 +147,7 @@ Given(
 Then("the indicator shows {string}", async ({ page }, label: string) => {
   const indicator = indicatorLocator(page);
   await expect(indicator).toHaveAttribute("data-kind", currentSaveStatusKind);
-  await expect(indicator.getByText(label, { exact: true })).toBeVisible();
+  await expect(indicatorLabelLocator(page)).toHaveText(label);
 });
 
 Then("it displays the formatted time in parentheses after the label", async ({ page }) => {
@@ -145,8 +156,7 @@ Then("it displays the formatted time in parentheses after the label", async ({ p
 
   const expectedTime = await page.evaluate((timestamp) => new Date(timestamp).toLocaleTimeString(), iso);
 
-  const timestampNode = indicatorLocator(page).locator("span").nth(2);
-  await expect(timestampNode).toHaveText(`(${expectedTime})`);
+  await expect(indicatorTimestampLocator(page)).toHaveText(`(${expectedTime})`);
 });
 
 Given(
