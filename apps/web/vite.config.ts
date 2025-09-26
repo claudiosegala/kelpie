@@ -16,7 +16,7 @@ export default defineConfig({
       allow: [
         // allow serving from workspace root and pnpm
         path.resolve(__dirname, "../../"),
-        "node_modules",
+        "node_modules"
       ]
     }
   }

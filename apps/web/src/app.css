@@ -1,11 +1,11 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 @plugin '@tailwindcss/typography';
 @plugin 'daisyui';
 
 :root {
-    color-scheme: light dark;
+  color-scheme: light dark;
 }
 
 body {
-    @apply min-h-screen bg-base-200 text-base-content;
+  @apply bg-base-200 text-base-content min-h-screen;
 }

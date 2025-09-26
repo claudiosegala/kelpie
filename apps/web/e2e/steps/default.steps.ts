@@ -25,7 +25,6 @@ Given("I open the app with {string}", async ({ page }, fixture: string) => {
   await page.reload();
 });
 
-
 Then("the Markdown contains {string}", async ({ page }, needle: string) => {
   const md: string | null = await page.evaluate((key: string) => {
     const raw = localStorage.getItem(key);
