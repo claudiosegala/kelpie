@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLocalStorageDriver } from "./driver";
+import { STORAGE_LOG_PREFIX } from "./logging";
 import type { StorageSnapshot } from "./types";
 
 const STORAGE_KEY = "kelpie:test-driver";
@@ -54,13 +55,13 @@ describe("createLocalStorageDriver", () => {
     expect(driver.load()).toEqual(SAMPLE_SNAPSHOT);
   });
 
-  it("returns null when the stored payload cannot be parsed", () => {
+  it("re-throws when the stored payload cannot be parsed", () => {
     const driver = createLocalStorageDriver(STORAGE_KEY);
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     globalThis.localStorage.setItem(STORAGE_KEY, "not-json");
 
-    expect(driver.load()).toBeNull();
-    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: failed to parse snapshot", expect.any(SyntaxError));
+    expect(() => driver.load()).toThrow(SyntaxError);
+    expect(warnSpy).toHaveBeenCalledWith(`${STORAGE_LOG_PREFIX}: failed to parse snapshot`, expect.any(SyntaxError));
   });
 
   it("no-ops when localStorage is unavailable", () => {
@@ -74,7 +75,7 @@ describe("createLocalStorageDriver", () => {
     expect(() => driver.clear()).not.toThrow();
 
     expect(warnSpy).toHaveBeenCalledTimes(3);
-    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: localStorage is not available");
+    expect(warnSpy).toHaveBeenCalledWith(`${STORAGE_LOG_PREFIX}: localStorage is not available`);
   });
 
   it("subscribes to storage events and filters by key", () => {
@@ -110,7 +111,7 @@ describe("createLocalStorageDriver", () => {
     expect(() => unsubscribe()).not.toThrow();
     expect(callback).not.toHaveBeenCalled();
 
-    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: window is not available");
+    expect(warnSpy).toHaveBeenCalledWith(`${STORAGE_LOG_PREFIX}: window is not available`);
 
     if (originalWindow) {
       vi.stubGlobal("window", originalWindow);

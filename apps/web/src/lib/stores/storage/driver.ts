@@ -1,4 +1,5 @@
 import { getLocalStorage, getWindow } from "./environment";
+import { storageWarn } from "./logging";
 import type { StorageSnapshot } from "./types";
 
 /**
@@ -29,8 +30,8 @@ export function createLocalStorageDriver(key: string): StorageDriver {
       try {
         return JSON.parse(raw) as StorageSnapshot;
       } catch (error) {
-        console.warn("Kelpie storage: failed to parse snapshot", error);
-        return null;
+        storageWarn("failed to parse snapshot", error);
+        throw error;
       }
     },
     save(snapshot) {
