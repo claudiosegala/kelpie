@@ -10,7 +10,7 @@ type SaveStatusUpdate = {
   timestamp?: string | number | null;
 };
 
-const SAVE_INDICATOR_SELECTOR = "[data-kind]";
+const SAVE_INDICATOR_SELECTOR = '[data-testid="save-indicator"]';
 
 let currentSaveStatusKind: SaveStatusKind = "idle";
 let lastTimestampIso: string | null = null;
