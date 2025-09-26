@@ -3,14 +3,14 @@ import {
   type PanelId,
   type ShellLayout,
   type ShellState,
-  type ViewMode,
+  ViewMode,
   defaultPanelForMode,
   isPanelAllowedInMode
 } from "$lib/app-shell/contracts";
 
 const initialState: ShellState = {
   layout: "desktop",
-  viewMode: "editor-preview",
+  viewMode: ViewMode.EditorPreview,
   activePanel: "editor"
 };
 
