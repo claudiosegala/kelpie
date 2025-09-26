@@ -1,17 +1,20 @@
 import { browser } from "$app/environment";
 import { writable } from "svelte/store";
 
-export type ThemeName = "light" | "dark";
+export enum Theme {
+  Light = "light",
+  Dark = "dark"
+}
 
 const STORAGE_KEY = "kelpie-theme";
 
-function getInitialTheme(): ThemeName {
-  if (!browser) return "light";
+function getInitialTheme(): Theme {
+  if (!browser) return Theme.Light;
   const stored = localStorage.getItem(STORAGE_KEY);
-  return stored === "dark" ? "dark" : "light";
+  return stored === Theme.Dark ? Theme.Dark : Theme.Light;
 }
 
-const themeStore = writable<ThemeName>(getInitialTheme());
+const themeStore = writable<Theme>(getInitialTheme());
 
 if (browser) {
   themeStore.subscribe((value) => {
@@ -23,5 +26,5 @@ if (browser) {
 export const theme = themeStore;
 
 export function toggleTheme(): void {
-  themeStore.update((current) => (current === "light" ? "dark" : "light"));
+  themeStore.update((current) => (current === Theme.Light ? Theme.Dark : Theme.Light));
 }
