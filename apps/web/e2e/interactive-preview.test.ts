@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 const STORAGE_KEY = "kelpie.todo.mmd:v1";
 
@@ -31,6 +31,13 @@ test.describe("interactive preview", () => {
     return payload.file;
   }
 
+  function taskCardByTitle(page: Page, title: string): Locator {
+    return page
+      .getByTestId("task-card")
+      .filter({ has: page.getByTestId("task-title").filter({ hasText: title }) })
+      .first();
+  }
+
   test("renders metadata badges for parsed tasks", async ({ page }) => {
     await loadDocument(page, "- [ ] Plan trip @due(2025-12-24) #travel #planning");
 
@@ -46,12 +53,12 @@ test.describe("interactive preview", () => {
   test("updates preview when editing the markdown document", async ({ page }) => {
     await loadDocument(page, "- [ ] Draft outline");
 
-    const editor = page.getByLabel("Markdown editor");
+    const editor = page.getByTestId("markdown-editor");
     const original = await editor.inputValue();
     const appendedLine = "\n- [ ] Capture inspiration @due(2025-08-15) #inbox";
     await editor.fill(`${original}${appendedLine}`);
 
-    const newTaskCard = page.getByTestId("task-card").filter({ hasText: "Capture inspiration" }).first();
+    const newTaskCard = taskCardByTitle(page, "Capture inspiration");
 
     await expect(newTaskCard).toBeVisible();
     await expect(newTaskCard.getByTestId("task-title")).toContainText("Capture inspiration");
@@ -70,7 +77,7 @@ test.describe("interactive preview", () => {
   test("persists toggled tasks back into markdown", async ({ page }) => {
     await loadDocument(page, "- [ ] Verify persistence");
 
-    const taskCard = page.getByTestId("task-card").filter({ hasText: "Verify persistence" }).first();
+    const taskCard = taskCardByTitle(page, "Verify persistence");
     const checkbox = taskCard.getByTestId("task-checkbox");
     await checkbox.check();
 

@@ -50,7 +50,7 @@
     .join(" ");
 </script>
 
-<div class="indicator-tooltip tooltip tooltip-bottom" data-tip={tooltipMessage}>
+<div class="indicator-tooltip tooltip tooltip-bottom" data-tip={tooltipMessage} data-testid="save-indicator-tooltip">
   <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
   <span
     class={badgeClasses}
@@ -63,9 +63,11 @@
     tabindex="0"
   >
     <SaveIndicatorIcon kind={status.kind} toneClass={tone.icon} />
-    <span class="indicator__label">{statusLabel}</span>
+    <span class="indicator__label" data-testid="save-indicator-label">{statusLabel}</span>
     {#if formattedTimestamp}
-      <span class="indicator__timestamp">({formattedTimestamp})</span>
+      <span class="indicator__timestamp" data-testid="save-indicator-timestamp">
+        ({formattedTimestamp})
+      </span>
     {/if}
   </span>
 </div>
