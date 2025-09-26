@@ -23,3 +23,10 @@ export function markError(error: unknown): void {
 export function resetSaveStatus(): void {
   set(initialStatus);
 }
+
+export function setSaveStatusForTesting(status: SaveStatus): void {
+  set(status);
+}
+
+const globalWithSetter = globalThis as { __kelpieSetSaveStatus?: (status: SaveStatus) => void };
+globalWithSetter.__kelpieSetSaveStatus = setSaveStatusForTesting;
