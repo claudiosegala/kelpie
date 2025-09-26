@@ -22,7 +22,7 @@
   </svelte:fragment>
 
   <svelte:fragment slot="preview">
-    <InteractivePreviewPanel tasks={$tasks} on:toggleTask={handleToggle} />
+    <InteractivePreviewPanel tasks={$tasks} content={$appState.file} on:toggleTask={handleToggle} />
   </svelte:fragment>
 
   <svelte:fragment slot="settings">
