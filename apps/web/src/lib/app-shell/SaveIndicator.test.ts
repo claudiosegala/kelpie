@@ -51,8 +51,8 @@ describe("SaveIndicator", () => {
 
     const indicator = screen.getByLabelText(/Saved locally/);
     expect(indicator).toHaveAttribute("data-kind", "saved");
-    const timestamp = within(indicator).getByText(/\d{1,2}:\d{2}/);
-    expect(timestamp.textContent).toContain(":");
+    const timestamp = within(indicator).getByText(/\(.+:.+\)/);
+    expect(timestamp.textContent).toMatch(/^\(.+\)$/);
   });
 
   it("surfaces errors with retry tooltip", async () => {
