@@ -150,6 +150,7 @@ describe("scheduleBroadcast", () => {
     vi.resetModules();
 
     const storage = createStorageMock();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const postMessageSpy = vi.fn(() => {
       throw new Error("post failed");
     });
@@ -185,6 +186,7 @@ describe("scheduleBroadcast", () => {
     expect(postMessageSpy).toHaveBeenCalledTimes(1);
     expect(close).toHaveBeenCalledTimes(1);
     expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: failed to post broadcast message", expect.any(Error));
 
     const followUp: StorageBroadcast = {
       scope: StorageBroadcastScope.History,
@@ -201,5 +203,7 @@ describe("scheduleBroadcast", () => {
     const parsed = JSON.parse(secondRaw as string);
     expect(parsed.scope).toBe(followUp.scope);
     expect(parsed.__sequence).toBe(1);
+
+    warnSpy.mockRestore();
   });
 });
