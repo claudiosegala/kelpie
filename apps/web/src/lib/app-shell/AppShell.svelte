@@ -4,9 +4,37 @@
   import { onDestroy } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import { shellState, startLayoutWatcher } from "$lib/stores/shell";
-  import type { PanelId } from "./contracts";
+  import type { PanelId, ViewMode } from "./contracts";
 
   export let version = "0.0.0";
+
+  type PanelDefinition = {
+    id: PanelId;
+    label: string;
+    slot: PanelId;
+    isVisible: (mode: ViewMode) => boolean;
+  };
+
+  const PANELS: PanelDefinition[] = [
+    {
+      id: "editor",
+      label: "Code editor",
+      slot: "editor",
+      isVisible: (mode) => mode === "editor-preview"
+    },
+    {
+      id: "preview",
+      label: "Preview",
+      slot: "preview",
+      isVisible: (mode) => mode !== "settings"
+    },
+    {
+      id: "settings",
+      label: "Settings",
+      slot: "settings",
+      isVisible: (mode) => mode === "settings"
+    }
+  ];
 
   let stopLayoutWatcher: (() => void) | undefined;
 
@@ -20,70 +48,66 @@
 
   $: layout = $shellState.layout;
   $: viewMode = $shellState.viewMode;
+  $: visiblePanels = PANELS.filter((panel) => panel.isVisible(viewMode));
+  $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === "settings";
 
-  $: showEditor = viewMode === "editor-preview";
-  $: showPreview = viewMode !== "settings";
-  $: showSettings = viewMode === "settings";
+  function mainClasses(): string {
+    return settingsIsSolo ? "app-shell__main app-shell__main--centered" : "app-shell__main";
+  }
 
-  $: mainClasses = [
-    "flex min-h-[calc(100vh-4.5rem)] w-full flex-1 items-stretch gap-5 overflow-x-auto px-3 pb-6 pt-4 transition-all duration-300 sm:px-5 lg:mx-auto lg:max-w-5xl lg:px-6",
-    showSettings ? "justify-center" : ""
-  ]
-    .filter(Boolean)
-    .join(" ");
+  function panelClasses(panel: PanelDefinition): string {
+    if (panel.id === "settings") {
+      return settingsIsSolo ? "app-shell__panel app-shell__panel--full" : "app-shell__panel app-shell__panel--stacked";
+    }
 
-  const basePanelClasses =
-    "flex h-full min-h-[calc(100vh-6rem)] max-w-full flex-1 flex-col overflow-hidden rounded-3xl border border-base-300/70 bg-base-100/90 shadow-lg shadow-base-300/30 backdrop-blur";
-
-  const stackedPanelClasses = `${basePanelClasses} min-w-[22rem]`;
-
-  $: settingsPanelClasses = [
-    basePanelClasses,
-    showSettings && !showEditor && !showPreview ? "min-w-full" : "min-w-[22rem]"
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const panelLabels: Record<PanelId, string> = {
-    editor: "Code editor",
-    preview: "Preview",
-    settings: "Settings"
-  };
+    return "app-shell__panel app-shell__panel--stacked";
+  }
 </script>
 
-<div class="flex min-h-screen flex-col bg-base-200 text-base-content" data-layout={layout} data-mode={viewMode}>
+<div class="app-shell" data-layout={layout} data-mode={viewMode}>
   <Toolbar {version} />
-  <main class={mainClasses} data-layout={layout}>
-    {#if showEditor}
-      <section class={stackedPanelClasses} aria-label={panelLabels.editor} data-active={showEditor} data-panel="editor">
-        <div class="h-full flex-1 flex-col overflow-hidden">
-          <slot name="editor" />
-        </div>
-      </section>
-    {/if}
-    {#if showPreview}
+  <main class={mainClasses()} data-layout={layout}>
+    {#each visiblePanels as panel (panel.id)}
       <section
-        class={stackedPanelClasses}
-        aria-label={panelLabels.preview}
-        data-active={showPreview}
-        data-panel="preview"
+        class={panelClasses(panel)}
+        aria-label={panel.label}
+        data-active={panel.isVisible(viewMode)}
+        data-panel={panel.id}
       >
-        <div class="h-full flex-1 flex-col overflow-hidden">
-          <slot name="preview" />
+        <div class="app-shell__panel-content">
+          <slot name={panel.slot} />
         </div>
       </section>
-    {/if}
-    {#if showSettings}
-      <section
-        class={settingsPanelClasses}
-        aria-label={panelLabels.settings}
-        data-active={showSettings}
-        data-panel="settings"
-      >
-        <div class="h-full flex-1 flex-col overflow-hidden">
-          <slot name="settings" />
-        </div>
-      </section>
-    {/if}
+    {/each}
   </main>
 </div>
+
+<style lang="postcss">
+  .app-shell {
+    @apply flex min-h-screen flex-col bg-base-200 text-base-content;
+  }
+
+  .app-shell__main {
+    @apply flex min-h-0 w-full flex-1 items-stretch gap-5 overflow-x-auto px-3 py-4 transition-all duration-300 sm:px-5 lg:mx-auto lg:max-w-5xl lg:px-6;
+  }
+
+  .app-shell__main--centered {
+    @apply justify-center;
+  }
+
+  .app-shell__panel {
+    @apply flex h-full min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden rounded-3xl border border-base-300/70 bg-base-100/90 shadow-lg shadow-base-300/30 backdrop-blur;
+  }
+
+  .app-shell__panel--stacked {
+    @apply min-w-[22rem];
+  }
+
+  .app-shell__panel--full {
+    @apply min-w-full;
+  }
+
+  .app-shell__panel-content {
+    @apply flex h-full min-h-0 flex-1 flex-col overflow-hidden;
+  }
+</style>
