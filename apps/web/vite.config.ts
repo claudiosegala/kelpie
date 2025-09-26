@@ -1,10 +1,9 @@
 import { sveltekit } from "@sveltejs/kit/vite";
-import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
-  plugins: [sveltekit(), tailwindcss()],
+  plugins: [sveltekit()],
   test: {
     environment: "jsdom",
     globals: true,
