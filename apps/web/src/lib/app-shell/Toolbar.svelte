@@ -16,8 +16,11 @@
     <div
       class="tooltip tooltip-bottom"
       data-tip={`Kelpie ${version}\nMarkdown to-do studio — edit, preview, and fine-tune your flow.`}
+      data-testid="toolbar-brand-tooltip"
     >
-      <span class="text-2xl font-black tracking-tight text-primary sm:text-3xl">Kelpie</span>
+      <span class="text-2xl font-black tracking-tight text-primary sm:text-3xl" data-testid="toolbar-brand-label">
+        Kelpie
+      </span>
     </div>
   </div>
 
