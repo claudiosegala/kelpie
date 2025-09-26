@@ -201,10 +201,14 @@ This section is for the AI or developers to update after implementation runs.
   - `/apps/web/src/lib/stores/`
 
 - **What has been implemented**:
-  - (AI fills in)
+  - Storage schema types and defaults scaffolding (`apps/web/src/lib/stores/storage/*`)
+  - Local storage driver wrapper with subscription hook
+  - Initial storage engine exposing read-only Svelte stores and reset/refresh utilities
 
 - **What remains to be implemented**:
-  - (AI fills in)
+  - Document/index/settings mutation APIs and undo/redo history management
+  - Audit logging, garbage collection, and multi-tab broadcast channel
+  - Migration, corruption handling, and developer inspector utilities
 
 - **Test files and coverage**:
   - Unit tests for history eviction: `/apps/web/src/lib/stores/storage-history.test.ts`

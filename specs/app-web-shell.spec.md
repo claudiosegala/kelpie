@@ -164,12 +164,17 @@ Assumption: For MVP, **retry is not implemented**; interactions in preview do no
 This section is for the AI or developers to update after implementation runs.
 
 - **What has been implemented**:
-  - (AI fills in)
+  - App shell scaffolding with toolbar, save indicator, and panel slots wired into Svelte stores.
+  - Responsive shell state store with layout detection hooks and persistence status tracking.
+  - Route updated to consume new shell and panel components with placeholder settings panel.
 
 - **What remains to be implemented**:
-  - (AI fills in)
+  - Hooking undo/redo triggers, debounce configuration, and theme application into the shell contracts.
+  - Toast-based error handling, offline indicator polish, and panel-specific behaviors (settings form wiring, preview interactions).
+  - Browser-mode unit tests covering shell interactions once Playwright/browser runners are available in CI.
 
 - **Test files and coverage:**:
+  - Unit store coverage: `/apps/web/src/lib/stores/shell.test.ts`
   - E2E for toolbar state & undo/redo buttons: `/apps/web/e2e/shell-toolbar.test.ts`
   - E2E for save indicator (saving/saved/error): `/apps/web/e2e/shell-save-indicator.test.ts`
   - E2E for debounce & propagation to preview: `/apps/web/e2e/shell-debounce.test.ts`

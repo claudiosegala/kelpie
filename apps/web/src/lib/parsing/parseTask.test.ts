@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseTaskLine, formatTask, parseMarkdown, Task } from "./parseTask";
+import { parseTaskLine, formatTask, parseMarkdown } from "./parseTask";
 
 describe("parseTaskLine", () => {
   it("parses an unchecked task without tags", () => {
