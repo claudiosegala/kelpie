@@ -8,24 +8,24 @@ test.describe("task persistence", () => {
   });
 
   test("toggled tasks remain checked after reloading the app", async ({ page }) => {
-    const tasks = page.locator(".task-item");
+    const tasks = page.getByTestId("task-card");
     await expect(tasks).toHaveCount(2);
 
     const firstTask = tasks.first();
     await expect(firstTask).toContainText("Buy milk");
 
-    const firstCheckbox = firstTask.getByRole("checkbox");
+    const firstCheckbox = firstTask.getByTestId("task-checkbox");
     await firstCheckbox.check();
     await expect(firstCheckbox).toBeChecked();
-    await expect(firstTask).toHaveClass(/done/);
+    await expect(firstTask).toHaveAttribute("data-completed", "true");
 
     await page.reload();
 
-    const tasksAfterReload = page.locator(".task-item");
+    const tasksAfterReload = page.getByTestId("task-card");
     await expect(tasksAfterReload).toHaveCount(2);
 
     const firstAfterReload = tasksAfterReload.first();
-    await expect(firstAfterReload).toHaveClass(/done/);
-    await expect(firstAfterReload.getByRole("checkbox")).toBeChecked();
+    await expect(firstAfterReload).toHaveAttribute("data-completed", "true");
+    await expect(firstAfterReload.getByTestId("task-checkbox")).toBeChecked();
   });
 });
