@@ -3,43 +3,33 @@
 <script lang="ts">
   import SaveIndicatorIcon from "./SaveIndicatorIcon.svelte";
   import { saveStatus } from "$lib/stores/persistence";
-  import { SaveStatusKind } from "$lib/app-shell/contracts";
-  import { LOCAL_SAVE_TOOLTIP, toneFor, tooltipFor, getTimestampDetails } from "./save-indicator.config";
-
-  const BASE_BADGE_CLASSES = "indicator";
+  import { buildSaveIndicatorViewModel } from "./save-indicator.viewmodel";
 
   $: status = $saveStatus;
-  $: statusLabel = status.message;
-  $: tone = toneFor(status.kind);
-  $: timestampDetails = getTimestampDetails(status);
-  $: tooltipBase = tooltipFor(status.kind) ?? LOCAL_SAVE_TOOLTIP;
-  $: tooltipMessage = timestampDetails ? `${tooltipBase}\n${timestampDetails.tooltipLine}` : tooltipBase;
-  $: badgeClasses = [
-    BASE_BADGE_CLASSES,
-    tone.badge,
-    status.kind === SaveStatusKind.Saving ? "indicator--saving animate-pulse" : ""
-  ]
-    .filter(Boolean)
-    .join(" ");
+  $: viewModel = buildSaveIndicatorViewModel(status);
 </script>
 
-<div class="indicator-tooltip tooltip tooltip-bottom" data-tip={tooltipMessage} data-testid="save-indicator-tooltip">
+<div
+  class="indicator-tooltip tooltip tooltip-bottom"
+  data-tip={viewModel.tooltipMessage}
+  data-testid="save-indicator-tooltip"
+>
   <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
   <span
-    class={badgeClasses}
-    data-kind={status.kind}
+    class={viewModel.badgeClasses}
+    data-kind={viewModel.kind}
     data-testid="save-indicator"
     aria-live="polite"
     role="status"
-    title={tooltipMessage}
-    aria-label={`${statusLabel}. ${tooltipMessage}`}
+    title={viewModel.tooltipMessage}
+    aria-label={viewModel.ariaLabel}
     tabindex="0"
   >
-    <SaveIndicatorIcon kind={status.kind} toneClass={tone.icon} />
-    <span class="indicator__label" data-testid="save-indicator-label">{statusLabel}</span>
-    {#if timestampDetails}
+    <SaveIndicatorIcon kind={viewModel.kind} toneClass={viewModel.iconToneClass} />
+    <span class="indicator__label" data-testid="save-indicator-label">{viewModel.label}</span>
+    {#if viewModel.timestampDetails}
       <span class="indicator__timestamp" data-testid="save-indicator-timestamp">
-        {timestampDetails.display}
+        {viewModel.timestampDetails.display}
       </span>
     {/if}
   </span>
