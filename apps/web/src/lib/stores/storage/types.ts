@@ -74,6 +74,7 @@ export type AuditEventType =
   | "document.updated"
   | "document.deleted"
   | "document.restored"
+  | "document.reordered"
   | "history.pruned"
   | "settings.updated"
   | "migration.completed"
