@@ -1,12 +1,12 @@
 import { appendAuditEntries } from "./audit";
-import type {
-  AuditEntry,
-  HistoryEntry,
-  HistoryOrigin,
+import {
   HistoryScope,
-  IsoDateTimeString,
-  RuntimeConfiguration,
-  StorageSnapshot
+  type AuditEntry,
+  type HistoryEntry,
+  type HistoryOrigin,
+  type IsoDateTimeString,
+  type RuntimeConfiguration,
+  type StorageSnapshot
 } from "./types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -266,7 +266,7 @@ function ensureTimeline(cache: HistoryCache, target: HistoryTarget): HistoryTime
 }
 
 function validateHistoryCapture(snapshot: StorageSnapshot, capture: HistoryCaptureInput): void {
-  if (capture.scope === "settings") {
+  if (capture.scope === HistoryScope.Settings) {
     if (capture.refId !== "settings") {
       throw new Error("settings history entries must target the 'settings' refId");
     }

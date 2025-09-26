@@ -4,31 +4,25 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import PanelToggleGroup from "./PanelToggleGroup.svelte";
-import { PANEL_ORDER, type PanelId } from "./contracts";
+import { PANEL_ORDER, PanelId, ShellLayout, ViewMode } from "./contracts";
+import { PANEL_LABELS } from "./panels";
 import { activatePanel, setLayout, setViewMode, shellState } from "$lib/stores/shell";
 
 function panelLabel(panel: PanelId): string {
-  switch (panel) {
-    case "editor":
-      return "Editor";
-    case "preview":
-      return "Preview";
-    case "settings":
-      return "Settings";
-  }
+  return PANEL_LABELS[panel];
 }
 
 describe("PanelToggleGroup", () => {
   beforeEach(() => {
-    setLayout("desktop");
-    setViewMode("editor-preview");
-    activatePanel("editor");
+    setLayout(ShellLayout.Desktop);
+    setViewMode(ViewMode.EditorPreview);
+    activatePanel(PanelId.Editor);
   });
 
   afterEach(() => {
-    setLayout("desktop");
-    setViewMode("editor-preview");
-    activatePanel("editor");
+    setLayout(ShellLayout.Desktop);
+    setViewMode(ViewMode.EditorPreview);
+    activatePanel(PanelId.Editor);
   });
 
   it("does not render anything when the shell is in desktop layout", () => {
@@ -38,7 +32,7 @@ describe("PanelToggleGroup", () => {
   });
 
   it("shows an accessible toggle button for each panel when in mobile layout", () => {
-    setLayout("mobile");
+    setLayout(ShellLayout.Mobile);
 
     render(PanelToggleGroup);
 
@@ -55,14 +49,14 @@ describe("PanelToggleGroup", () => {
   });
 
   it("disables panels that are not allowed in the current view mode", () => {
-    setLayout("mobile");
-    setViewMode("settings");
+    setLayout(ShellLayout.Mobile);
+    setViewMode(ViewMode.Settings);
 
     render(PanelToggleGroup);
 
-    const editorButton = screen.getByRole("button", { name: "Editor" });
-    const previewButton = screen.getByRole("button", { name: "Preview" });
-    const settingsButton = screen.getByRole("button", { name: "Settings" });
+    const editorButton = screen.getByRole("button", { name: panelLabel(PanelId.Editor) });
+    const previewButton = screen.getByRole("button", { name: panelLabel(PanelId.Preview) });
+    const settingsButton = screen.getByRole("button", { name: panelLabel(PanelId.Settings) });
 
     expect(editorButton).toBeDisabled();
     expect(previewButton).toBeDisabled();
@@ -72,18 +66,18 @@ describe("PanelToggleGroup", () => {
 
   it("activates the selected panel when a button is clicked", async () => {
     const user = userEvent.setup();
-    setLayout("mobile");
+    setLayout(ShellLayout.Mobile);
 
     render(PanelToggleGroup);
 
-    const previewButton = screen.getByRole("button", { name: "Preview" });
-    const editorButton = screen.getByRole("button", { name: "Editor" });
+    const previewButton = screen.getByRole("button", { name: panelLabel(PanelId.Preview) });
+    const editorButton = screen.getByRole("button", { name: panelLabel(PanelId.Editor) });
 
     await user.click(previewButton);
     await tick();
 
     expect(previewButton).toHaveAttribute("aria-pressed", "true");
     expect(editorButton).toHaveAttribute("aria-pressed", "false");
-    expect(get(shellState).activePanel).toBe("preview");
+    expect(get(shellState).activePanel).toBe(PanelId.Preview);
   });
 });

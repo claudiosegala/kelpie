@@ -58,9 +58,16 @@ export type DocumentSnapshot = {
   lastEditedBy?: string;
 };
 
-export type HistoryScope = "document" | "settings";
+export enum HistoryScope {
+  Document = "document",
+  Settings = "settings"
+}
 
-export type HistoryOrigin = "keyboard" | "toolbar" | "api";
+export enum HistoryOrigin {
+  Keyboard = "keyboard",
+  Toolbar = "toolbar",
+  Api = "api"
+}
 
 export type HistoryEntry = {
   id: string;
@@ -73,19 +80,20 @@ export type HistoryEntry = {
   sequence: number;
 };
 
-export type AuditEventType =
-  | "document.created"
-  | "document.updated"
-  | "document.deleted"
-  | "document.restored"
-  | "document.reordered"
-  | "document.purged"
-  | "history.pruned"
-  | "settings.updated"
-  | "migration.completed"
-  | "storage.reset"
-  | "storage.corruption"
-  | "storage.quota.warning";
+export enum AuditEventType {
+  DocumentCreated = "document.created",
+  DocumentUpdated = "document.updated",
+  DocumentDeleted = "document.deleted",
+  DocumentRestored = "document.restored",
+  DocumentReordered = "document.reordered",
+  DocumentPurged = "document.purged",
+  HistoryPruned = "history.pruned",
+  SettingsUpdated = "settings.updated",
+  MigrationCompleted = "migration.completed",
+  StorageReset = "storage.reset",
+  StorageCorruption = "storage.corruption",
+  StorageQuotaWarning = "storage.quota.warning"
+}
 
 export type AuditEntry = {
   id: string;
@@ -114,8 +122,22 @@ export type StorageMutationResult = {
 /**
  * Event payload describing a change broadcast across tabs.
  */
+export enum StorageBroadcastScope {
+  Snapshot = "snapshot",
+  Documents = "documents",
+  Settings = "settings",
+  Config = "config",
+  History = "history",
+  Audit = "audit"
+}
+
+export enum StorageBroadcastOrigin {
+  Local = "local",
+  External = "external"
+}
+
 export type StorageBroadcast = {
-  scope: "snapshot" | "documents" | "settings" | "config" | "history" | "audit";
+  scope: StorageBroadcastScope;
   updatedAt: IsoDateTimeString;
-  origin: "local" | "external";
+  origin: StorageBroadcastOrigin;
 };

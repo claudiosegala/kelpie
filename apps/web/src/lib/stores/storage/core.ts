@@ -16,13 +16,15 @@ import {
 } from "./history";
 import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
-import type {
-  HistoryEntry,
-  IsoDateTimeString,
-  RuntimeConfiguration,
-  StorageBroadcast,
-  StorageSnapshot,
-  UiSettings
+import {
+  StorageBroadcastOrigin,
+  StorageBroadcastScope,
+  type HistoryEntry,
+  type IsoDateTimeString,
+  type RuntimeConfiguration,
+  type StorageBroadcast,
+  type StorageSnapshot,
+  type UiSettings
 } from "./types";
 
 export type StorageCoreState = {
@@ -118,9 +120,9 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
     if (emitBroadcast && changed) {
       broadcast(
         {
-          scope: "snapshot",
+          scope: StorageBroadcastScope.Snapshot,
           updatedAt: now(),
-          origin: "local"
+          origin: StorageBroadcastOrigin.Local
         },
         { driver }
       );

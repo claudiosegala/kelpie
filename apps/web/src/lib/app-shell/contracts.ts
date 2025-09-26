@@ -8,6 +8,8 @@ export enum PanelId {
   Settings = "settings"
 }
 
+export const PANEL_ORDER: readonly PanelId[] = [PanelId.Editor, PanelId.Preview, PanelId.Settings];
+
 /**
  * The layout mode currently selected by the user.
  * - `editor-preview`: editor and preview should be visible (split view on desktop).
