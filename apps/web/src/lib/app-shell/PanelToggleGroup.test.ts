@@ -39,7 +39,7 @@ describe("PanelToggleGroup", () => {
     const group = screen.getByRole("group", { name: "Select active panel" });
     const buttons = within(group).getAllByRole("button");
     expect(buttons).toHaveLength(PANEL_DEFINITIONS.length);
-    
+
     const state = get(shellState);
 
     for (const { id } of PANEL_DEFINITIONS) {
