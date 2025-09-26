@@ -13,9 +13,10 @@
     "format": "prettier --write . --cache --cache-location ../../.cache/prettier",
     "lint": "prettier --check . --cache --cache-location ../../.cache/prettier && eslint . --cache --cache-location ../../.cache/eslint",
     "test:unit": "vitest",
+    "test:unit:watch": "vitest --watch",
     "test": "npm run test:unit -- --run && npm run test:e2e",
     "test:e2e:generate": "bddgen",
-    "test:e2e": "pnpm spec:extract && bddgen && playwright test",
+    "test:e2e": "node ../../scripts/run-playwright-e2e.js",
     "spec:extract": "node src/lib/specdsl/extract.js"
   },
   "devDependencies": {

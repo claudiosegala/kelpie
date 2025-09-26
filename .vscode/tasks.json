@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pnpm dev",
+      "type": "shell",
+      "command": "pnpm dev",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "pnpm dev:specs",
+      "type": "shell",
+      "command": "pnpm dev:specs",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "pnpm test:unit:watch",
+      "type": "shell",
+      "command": "pnpm test:unit:watch",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "pnpm test:e2e",
+      "type": "shell",
+      "command": "pnpm test:e2e",
+      "problemMatcher": []
+    }
+  ]
+}
