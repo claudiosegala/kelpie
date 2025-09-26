@@ -1,11 +1,5 @@
-import type {
-  AuditEntry,
-  DocumentIndex,
-  DocumentIndexEntry,
-  DocumentSnapshot,
-  IsoDateTimeString,
-  StorageSnapshot
-} from "./types";
+import { appendAuditEntries, createAuditEntry } from "./audit";
+import type { DocumentIndex, DocumentIndexEntry, DocumentSnapshot, IsoDateTimeString, StorageSnapshot } from "./types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -83,7 +77,7 @@ export function createDocument(snapshot: StorageSnapshot, options: DocumentCreat
     documents: nextDocuments,
     index: nextIndex,
     settings: nextSettings,
-    audit: appendAudit(snapshot.audit, auditEntry)
+    audit: appendAuditEntries(snapshot, auditEntry)
   } satisfies StorageSnapshot;
 }
 
@@ -156,7 +150,7 @@ export function updateDocument(
     documents: nextDocuments,
     index: nextIndex,
     settings: nextSettings,
-    audit: appendAudit(snapshot.audit, auditEntry)
+    audit: appendAuditEntries(snapshot, auditEntry)
   } satisfies StorageSnapshot;
 }
 
@@ -209,7 +203,7 @@ export function softDeleteDocument(
     ...snapshot,
     index: nextIndex,
     settings: nextSettings,
-    audit: appendAudit(snapshot.audit, auditEntry)
+    audit: appendAuditEntries(snapshot, auditEntry)
   } satisfies StorageSnapshot;
 }
 
@@ -258,7 +252,7 @@ export function restoreDocument(
     ...snapshot,
     index: nextIndex,
     settings: nextSettings,
-    audit: appendAudit(snapshot.audit, auditEntry)
+    audit: appendAuditEntries(snapshot, auditEntry)
   } satisfies StorageSnapshot;
 }
 
@@ -290,7 +284,7 @@ export function reorderDocuments(
   return {
     ...snapshot,
     index: nextIndex,
-    audit: appendAudit(snapshot.audit, auditEntry)
+    audit: appendAuditEntries(snapshot, auditEntry)
   } satisfies StorageSnapshot;
 }
 
@@ -378,23 +372,6 @@ function resolveNextActiveDocumentId(index: DocumentIndex, deletedIndex: number,
   }
 
   return null;
-}
-
-function appendAudit(existing: AuditEntry[], entry: AuditEntry): AuditEntry[] {
-  return [...existing, entry];
-}
-
-function createAuditEntry(
-  type: AuditEntry["type"],
-  createdAt: IsoDateTimeString,
-  metadata?: Record<string, unknown>
-): AuditEntry {
-  return {
-    id: createId(),
-    type,
-    createdAt,
-    ...(metadata ? { metadata } : {})
-  } satisfies AuditEntry;
 }
 
 function omitUndefined<T extends Record<string, unknown>>(value: T): Partial<T> {

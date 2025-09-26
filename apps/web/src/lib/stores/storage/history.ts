@@ -1,3 +1,4 @@
+import { appendAuditEntries } from "./audit";
 import type {
   AuditEntry,
   HistoryEntry,
@@ -132,7 +133,7 @@ export function captureHistorySnapshot(
 
   if (pruned.length) {
     auditEntry = createHistoryAuditEntry(pruned, snapshot.config, nowFn);
-    nextAudit = [...snapshot.audit, auditEntry];
+    nextAudit = appendAuditEntries(snapshot, auditEntry);
   }
 
   return {

@@ -661,12 +661,12 @@ This section is for the AI or developers to update after implementation runs.
   - Storage schema types and defaults scaffolding (`apps/web/src/lib/stores/storage/*`)
   - Local storage driver wrapper with subscription hook
   - Initial storage engine exposing read-only Svelte stores and reset/refresh utilities
+  - Document lifecycle helpers with audit events and history capture utilities
+  - Audit log capping with helper utilities enforcing configuration caps
 
 - **What remains to be implemented**:
-  - Document/index/settings mutation APIs covering creation, updates, soft delete/restore, and reordering as defined in §17.
-  - History capture, undo/redo stacks, retention pruning, and audit hooks described in §18.
-  - Broadcast scheduling, cross-tab refresh flows, and quota-aware garbage collection from §§19, 6, and 23.
   - Migration pipeline, corruption recovery, and developer inspector tooling described in §§20–21.
+  - Quota-aware garbage collection and proactive size monitoring from §§6 and 23.
   - Driver resilience features (backups, fallbacks, quota errors) and telemetry instrumentation from §§22–24.
   - Privacy toggles, encryption hooks, and compliance-aware audit policies from §25.
 
