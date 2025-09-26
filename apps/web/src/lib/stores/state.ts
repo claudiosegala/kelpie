@@ -214,15 +214,20 @@ export function toggleTask(id: string): void {
       return document; // extra guard (strict mode safe)
     }
 
+    if (t.lineIndex < 0 || t.lineIndex >= lines.length) {
+      return document;
+    }
+
     const updated: Task = {
       id: t.id,
       raw: t.raw,
       title: t.title,
       tags: t.tags,
-      checked: !t.checked
+      checked: !t.checked,
+      lineIndex: t.lineIndex
     };
 
-    lines[idx] = formatTask(updated);
+    lines[t.lineIndex] = formatTask(updated);
 
     return { ...document, content: lines.join("\n") };
   });
