@@ -4,18 +4,18 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import PanelToggleGroup from "./PanelToggleGroup.svelte";
-import { PANEL_ORDER, type PanelId } from "./contracts";
+import { type PanelId } from "./contracts";
+import { PANEL_DEFINITIONS } from "./panels";
 import { activatePanel, setLayout, setViewMode, shellState } from "$lib/stores/shell";
 
+const PANEL_METADATA = PANEL_DEFINITIONS.map(({ id, label }) => ({ id, label })) satisfies {
+  id: PanelId;
+  label: string;
+}[];
+
 function panelLabel(panel: PanelId): string {
-  switch (panel) {
-    case "editor":
-      return "Editor";
-    case "preview":
-      return "Preview";
-    case "settings":
-      return "Settings";
-  }
+  const match = PANEL_METADATA.find((definition) => definition.id === panel);
+  return match?.label ?? panel;
 }
 
 describe("PanelToggleGroup", () => {
@@ -44,13 +44,13 @@ describe("PanelToggleGroup", () => {
 
     const group = screen.getByRole("group", { name: "Select active panel" });
     const buttons = within(group).getAllByRole("button");
-    expect(buttons).toHaveLength(PANEL_ORDER.length);
+    expect(buttons).toHaveLength(PANEL_METADATA.length);
     const state = get(shellState);
 
-    for (const panel of PANEL_ORDER) {
-      const button = within(group).getByRole("button", { name: panelLabel(panel) });
+    for (const { id } of PANEL_METADATA) {
+      const button = within(group).getByRole("button", { name: panelLabel(id) });
       expect(button).toBeVisible();
-      expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === panel));
+      expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === id));
     }
   });
 
@@ -60,9 +60,9 @@ describe("PanelToggleGroup", () => {
 
     render(PanelToggleGroup);
 
-    const editorButton = screen.getByRole("button", { name: "Editor" });
-    const previewButton = screen.getByRole("button", { name: "Preview" });
-    const settingsButton = screen.getByRole("button", { name: "Settings" });
+    const editorButton = screen.getByRole("button", { name: panelLabel("editor") });
+    const previewButton = screen.getByRole("button", { name: panelLabel("preview") });
+    const settingsButton = screen.getByRole("button", { name: panelLabel("settings") });
 
     expect(editorButton).toBeDisabled();
     expect(previewButton).toBeDisabled();
@@ -76,8 +76,8 @@ describe("PanelToggleGroup", () => {
 
     render(PanelToggleGroup);
 
-    const previewButton = screen.getByRole("button", { name: "Preview" });
-    const editorButton = screen.getByRole("button", { name: "Editor" });
+    const previewButton = screen.getByRole("button", { name: panelLabel("preview") });
+    const editorButton = screen.getByRole("button", { name: panelLabel("editor") });
 
     await user.click(previewButton);
     await tick();

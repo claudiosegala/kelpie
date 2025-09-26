@@ -5,10 +5,8 @@
   import SettingsIcon from "$lib/components/icons/SettingsIcon.svelte";
   import SplitViewIcon from "$lib/components/icons/SplitViewIcon.svelte";
   import { setViewMode, shellState } from "$lib/stores/shell";
-  import type { ViewMode } from "./contracts";
   import DockToggleButton from "./DockToggleButton.svelte";
   import { ViewMode } from "./contracts";
-  import { getDockButtonClasses } from "./dockButtonClasses";
 
   const viewOptions: { id: ViewMode; label: string; Icon: typeof SplitViewIcon }[] = [
     { id: ViewMode.EditorPreview, label: "Editor & preview", Icon: SplitViewIcon },
