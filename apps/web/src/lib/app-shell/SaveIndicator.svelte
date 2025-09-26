@@ -29,7 +29,7 @@
     }
     if (status.kind === "saving") {
       return {
-        container: "border-info/60 bg-info/10 text-info/90",
+        container: "border-info/60 bg-info/10 text-info/90 animate-pulse",
         label: "text-info",
         timestamp: "text-info/70"
       } satisfies ToneClasses;
@@ -53,7 +53,7 @@
     aria-label={`${statusLabel}. ${tooltipMessage}`}
     tabindex="0"
   >
-    <span class={`font-semibold uppercase tracking-[0.15em] ${tone.label}`}>{statusLabel}</span>
+    <span class={`text-sm font-medium tracking-tight ${tone.label}`}>{statusLabel}</span>
     {#if timestampLabel && status.kind === "saved"}
       <span class={`text-[0.65rem] ${tone.timestamp}`}>{timestampLabel}</span>
     {/if}
