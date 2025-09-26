@@ -236,7 +236,209 @@ The storage engine orchestrates persistence and read models for the rest of the 
 - **Broadcasts**
   - `scheduleBroadcast` is currently a stub that preserves the contract surface; future work will hook this into `BroadcastChannel` (or similar).
 
-## 16. AI Handoff & Test Tracking
+## 16. Snapshot Schema & Invariants
+
+The persisted snapshot is a single JSON object written atomically via the driver.
+This section enumerates the required fields and the invariants that updates must
+preserve.
+
+- **`meta`**
+  - `version` matches the storage schema version defined in code. Bumping this
+    value requires a migration entry (see §20).
+  - `installationId` is a UUID that never changes for the lifetime of the
+    install. Regenerated only on full reset.
+  - `createdAt` is the timestamp of the initial seed; `lastOpenedAt` is updated
+    on every boot before any other mutations are processed.
+  - `migratedFrom` is optional and records the previous schema version after a
+    successful migration.
+
+- **`config`**
+  - Contains runtime tunables. All values must be serialisable primitives to
+    keep the snapshot deterministic.
+  - `debounce.writeMs` and `debounce.broadcastMs` are positive integers.
+  - Caps (`historyEntryCap`, `auditEntryCap`) must be ≥ the number of required
+    seed entries to avoid trimming defaults.
+
+- **`settings`**
+  - `lastActiveDocumentId` is `null` only when the index is empty. When a
+    document exists it must reference an `index` entry that is not soft-deleted.
+  - `panes` and `filters` are JSON-serialisable maps. Future settings must
+    follow the same constraint.
+  - `createdAt` never changes; `updatedAt` is bumped on each settings mutation.
+
+- **`index`**
+  - Ordered array defining the display order of documents. Each entry's `id`
+    must correspond to a key in the `documents` map.
+  - `deletedAt` is `null` for active docs and populated for soft-deleted docs.
+    When populated, `purgeAfter` MUST be set to `deletedAt + retentionDays`.
+  - Only active documents participate in default selection and navigation.
+
+- **`documents`**
+  - Map keyed by document ID. Missing keys for entries in the index are treated
+    as corruption and should trigger recovery (future work).
+  - `updatedAt` reflects the last persisted mutation. Implementations should
+    avoid mutating timestamps unless a change actually occurred.
+
+- **`history`**
+  - Append-only array ordered by `createdAt`. Entries beyond retention caps are
+    pruned from the front.
+  - `scope` is either `document` or `settings`. When `document`, `refId` must be
+    a valid doc ID (even if the doc is soft-deleted). When `settings`, `refId`
+    MUST equal the literal string `"settings"`.
+  - `snapshot` stores the complete serialised payload needed to restore state.
+
+- **`audit`**
+  - Append-only array ordered by `createdAt`. Oldest entries are pruned first.
+  - Each entry's `type` uses the taxonomy defined in §5. Metadata is arbitrary
+    JSON but should remain small (≤ 2 KB) to avoid quota pressure.
+
+Updates that violate these invariants must throw and leave the snapshot
+untouched.
+
+## 17. Document Lifecycle & Operations
+
+Document APIs expose the following behaviours:
+
+- **Creation**
+  - Generates a UUID for the document ID.
+  - Inserts a `DocumentIndexEntry` at the requested position (default: end).
+  - Creates an accompanying document snapshot with seeded content and matching
+    timestamps.
+  - Appends audit event `document.created` and history snapshot capturing the
+    initial state.
+
+- **Update**
+  - Accepts partial payloads for title/content but always writes a full snapshot
+    to storage.
+  - Bumps `updatedAt` and, when applicable, `lastEditedBy`.
+  - Enqueues a history snapshot prior to persisting the change so undo restores
+    the previous state.
+
+- **Soft Delete**
+  - Sets `deletedAt` to now and `purgeAfter` to `now + retention`.
+  - Removes the document ID from default selection flows; if the deleted doc was
+    active, selection moves to the next non-deleted entry.
+  - Appends audit event `document.deleted` and history snapshot.
+
+- **Restore**
+  - Clears `deletedAt` and `purgeAfter`.
+  - Reinserts the document at its previous index position.
+  - Emits audit event `document.restored`.
+
+- **Reorder**
+  - Supports drag/drop style reorderings by accepting a new ordered list of IDs.
+  - Updates only the `index` array; documents retain their metadata.
+  - Emits audit event `document.updated` to track the change.
+
+- **Purge**
+  - Triggered by garbage collection when `purgeAfter` is in the past.
+  - Permanently removes the index entry, document snapshot, and associated
+    history entries.
+  - Adds audit events for both the purge and history pruning.
+
+All operations must be debounced via the write scheduler (default 2s) but can be
+forced immediately by developer utilities (e.g., reset).
+
+## 18. History Management
+
+Undo/redo relies on explicit snapshot captures. The spec mandates:
+
+- **Capture strategy**
+  - Before each mutation, persist a snapshot of the target scope (doc/settings).
+  - Snapshots contain the minimal JSON required to restore state; for documents
+    this includes `title`, `content`, and timestamps.
+
+- **Timelines**
+  - Separate stacks per document plus a shared stack for settings. Undoing a doc
+    change only affects that document's history.
+  - Each timeline tracks `cursor` state so redo is possible until another write
+    occurs.
+
+- **Retention**
+  - History older than `historyRetentionDays` or beyond `historyEntryCap` is
+    trimmed FIFO. Trimming records an audit entry of type `history.pruned`.
+
+- **Undo/Redo mechanics**
+  - Undo pops the previous snapshot, writes it to storage, and pushes the current
+    state onto the redo stack.
+  - Redo pops from the redo stack and applies it similarly.
+  - Calling undo when no history exists is a no-op.
+
+History operations must be atomic with the associated document/settings write so
+that the snapshot and history remain consistent.
+
+## 19. Multi-Tab Synchronisation
+
+Multi-tab support hinges on the driver subscription hook and broadcast events.
+
+- **Event triggers**
+  - Local writes enqueue a `StorageBroadcast` with `origin: "local"` and scope
+    derived from the mutation (document/settings/config/etc.).
+  - On tab focus change, the app explicitly calls `refresh()` to capture any
+    missed writes.
+
+- **Receiving updates**
+  - When the driver signals an external change, the engine reloads the full
+    snapshot via `refresh()` and compares timestamps to determine if UI stores
+    need to emit.
+  - Last-write-wins: whichever tab persisted last overwrites local in-memory
+    state. No merge attempts are made.
+
+- **Broadcast channel (future)**
+  - `scheduleBroadcast` will post messages through `BroadcastChannel` once
+    implemented. The API shape is frozen to avoid breaking changes.
+
+- **Edge cases**
+  - Tabs detecting schema version mismatches must force a refresh and prompt for
+    migration handling (future UX).
+  - Throttling ensures repeated writes within `debounce.broadcastMs` are
+    coalesced into a single broadcast event.
+
+## 20. Migration & Integrity
+
+Schema evolution follows a versioned migration system:
+
+- **Detection**
+  - On boot, compare `snapshot.meta.version` to the latest known version.
+  - When older, run sequential migration steps until up to date.
+
+- **Execution**
+  - Migration functions return a fully hydrated snapshot. Failures throw and
+    leave the on-disk data untouched.
+  - Successful migrations append audit event `migration.completed` and set
+    `meta.migratedFrom`.
+
+- **Corruption handling**
+  - Invalid JSON or schema violations trigger an internal `storage.corruption`
+    audit entry and fall back to seeded defaults (with best-effort backup of the
+    corrupted payload for developer inspection).
+  - Reset utilities can wipe the corrupted data entirely.
+
+- **Testing**
+  - Dedicated migration tests ensure sequential upgrades (e.g., v1 → v2 → v3)
+    produce expected snapshots and audit entries.
+
+## 21. Developer Inspector & Utilities
+
+The developer tooling surfaces storage internals for debugging.
+
+- **Inspector panel**
+  - Read-only tree view of the snapshot, history, and audit logs.
+  - Provides search/filter by document ID or event type.
+  - Displays derived metrics (history counts, storage size estimate, quota
+    usage).
+
+- **Utilities**
+  - "Reset storage" invokes `reset()` and reloads the page state.
+  - "Simulate first run" clears storage and seeds a tutorial document without
+    wiping configuration overrides.
+  - "Run garbage collection" forces purge checks immediately.
+
+- **Developer logging**
+  - Debug builds log every storage mutation with before/after sizes.
+  - Production builds log only unrecoverable errors.
+
+## 22. AI Handoff & Test Tracking
 
 This section is for the AI or developers to update after implementation runs.
 
@@ -249,16 +451,17 @@ This section is for the AI or developers to update after implementation runs.
   - Initial storage engine exposing read-only Svelte stores and reset/refresh utilities
 
 - **What remains to be implemented**:
-  - Document/index/settings mutation APIs and undo/redo history management
-  - Audit logging, garbage collection, and multi-tab broadcast channel
-  - Migration, corruption handling, and developer inspector utilities
+  - Document/index/settings mutation APIs covering creation, updates, soft delete/restore, and reordering as defined in §17.
+  - History capture, undo/redo stacks, retention pruning, and audit hooks described in §18.
+  - Broadcast scheduling, cross-tab refresh flows, and quota-aware garbage collection from §19 and §6.
+  - Migration pipeline, corruption recovery, and developer inspector tooling described in §§20–21.
 
 - **Test files and coverage**:
   - Unit tests for storage engine hydration, refresh, reset, and update semantics: `/apps/web/src/lib/stores/storage/engine.test.ts`
-  - Unit tests for history eviction: `/apps/web/src/lib/stores/storage-history.test.ts`
-  - Unit tests for Migration tests: `/apps/web/src/lib/stores/storage-migration.test.ts`
-  - Unit tests for Sync tests (multi-tab): `/apps/web/src/lib/stores/storage-sync.test.ts`
-  - Unit tests for Garbage collection tests: `/apps/web/src/lib/stores/storage-gc.test.ts`
-  - Unit tests for Audit log tests: `/apps/web/src/lib/stores/storage-audit.test.ts`
+  - Unit tests for history capture and eviction: `/apps/web/src/lib/stores/storage-history.test.ts`
+  - Unit tests for migration upgrades and corruption fallback: `/apps/web/src/lib/stores/storage-migration.test.ts`
+  - Unit tests for multi-tab synchronisation and broadcast throttling: `/apps/web/src/lib/stores/storage-sync.test.ts`
+  - Unit tests for garbage-collection purge ordering: `/apps/web/src/lib/stores/storage-gc.test.ts`
+  - Unit tests for audit logging invariants: `/apps/web/src/lib/stores/storage-audit.test.ts`
 
 This section is continuously updated as progress is made.
