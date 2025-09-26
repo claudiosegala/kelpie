@@ -37,14 +37,6 @@
     return "app-shell__panel app-shell__panel--stacked";
   }
 
-  function panelIsActive(panel: PanelDefinition): boolean {
-    if (layout === "desktop") {
-      return true;
-    }
-
-    return panel.id === activePanel;
-  }
-
   function panelIsHidden(panel: PanelDefinition): boolean {
     if (layout === "desktop") {
       return false;
