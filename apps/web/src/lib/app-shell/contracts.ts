@@ -2,11 +2,13 @@
  * Types describing the contracts between the app shell and its child panels.
  * These mirror the responsibilities outlined in `specs/app-web-shell.spec.md`.
  */
-export enum PanelId {
-  Editor = "editor",
-  Preview = "preview",
-  Settings = "settings"
-}
+export const PanelId = {
+  Editor: "editor",
+  Preview: "preview",
+  Settings: "settings"
+} as const;
+
+export type PanelId = (typeof PanelId)[keyof typeof PanelId];
 
 export const PANEL_ORDER: readonly PanelId[] = [PanelId.Editor, PanelId.Preview, PanelId.Settings];
 
@@ -16,26 +18,32 @@ export const PANEL_ORDER: readonly PanelId[] = [PanelId.Editor, PanelId.Preview,
  * - `preview-only`: only the preview should be visible.
  * - `settings`: settings replace the main workspace.
  */
-export enum ViewMode {
-  EditorPreview = "editor-preview",
-  PreviewOnly = "preview-only",
-  Settings = "settings"
-}
+export const ViewMode = {
+  EditorPreview: "editor-preview",
+  PreviewOnly: "preview-only",
+  Settings: "settings"
+} as const;
+
+export type ViewMode = (typeof ViewMode)[keyof typeof ViewMode];
 
 /**
  * Shell layout state derived from viewport size.
  */
-export enum ShellLayout {
-  Desktop = "desktop",
-  Mobile = "mobile"
-}
+export const ShellLayout = {
+  Desktop: "desktop",
+  Mobile: "mobile"
+} as const;
 
-export enum SaveStatusKind {
-  Idle = "idle",
-  Saving = "saving",
-  Saved = "saved",
-  Error = "error"
-}
+export type ShellLayout = (typeof ShellLayout)[keyof typeof ShellLayout];
+
+export const SaveStatusKind = {
+  Idle: "idle",
+  Saving: "saving",
+  Saved: "saved",
+  Error: "error"
+} as const;
+
+export type SaveStatusKind = (typeof SaveStatusKind)[keyof typeof SaveStatusKind];
 
 export type SaveStatus =
   | { kind: SaveStatusKind.Idle; message: "Saved locally \u2713"; timestamp: number | null }
