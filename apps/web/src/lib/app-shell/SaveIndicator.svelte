@@ -51,8 +51,8 @@
     <span class={badgeClasses} aria-hidden="true"></span>
     <span class="font-medium">{statusLabel}</span>
     {#if timestampLabel && status.kind === "saved"}
-      <span class="text-base-content/60 text-xs">({timestampLabel})</span>
+      <span class="text-xs text-base-content/60">({timestampLabel})</span>
     {/if}
-    <span class="text-base-content/50 text-xs" aria-hidden="true">ⓘ</span>
+    <span class="text-xs text-base-content/50" aria-hidden="true">ⓘ</span>
   </div>
 </div>
