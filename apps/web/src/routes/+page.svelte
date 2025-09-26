@@ -3,12 +3,12 @@
     import CodeEditorPanel from "$lib/panels/editor/CodeEditorPanel.svelte";
     import InteractivePreviewPanel from "$lib/panels/preview/InteractivePreviewPanel.svelte";
     import AppSettingsPanel from "$lib/panels/settings/AppSettingsPanel.svelte";
-    import { appState, tasks, toggleTask } from "$lib/stores/state";
+    import { appState, setDocumentContent, tasks, toggleTask } from "$lib/stores/state";
 
     const version = "0.0.0-dev";
 
     function handleEditorChange(event: CustomEvent<{ value: string }>) {
-        appState.update((state) => ({ ...state, file: event.detail.value }));
+        setDocumentContent(event.detail.value);
     }
 
     function handleToggle(event: CustomEvent<{ id: string }>) {
