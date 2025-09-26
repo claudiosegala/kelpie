@@ -10,10 +10,12 @@
   export let tasks: Task[] = [];
   export let content = "";
 
-  enum ViewMode {
-    Tasks = "tasks",
-    Markdown = "markdown"
-  }
+  const ViewMode = {
+    Tasks: "tasks",
+    Markdown: "markdown"
+  } as const;
+
+  type ViewMode = (typeof ViewMode)[keyof typeof ViewMode];
 
   let view: ViewMode = ViewMode.Tasks;
 
