@@ -3,8 +3,12 @@
     "svelte.svelte-vscode",
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "csstools.postcss",
+    "ZixuanChen.vitest-explorer",
     "ms-playwright.playwright",
-    "vitest.explorer",
-    "yzhang.markdown-all-in-one"
+    "alexkrechik.cucumberautocomplete",
+    "yzhang.markdown-all-in-one",
+    "bierner.github-markdown-preview"
   ]
 }
