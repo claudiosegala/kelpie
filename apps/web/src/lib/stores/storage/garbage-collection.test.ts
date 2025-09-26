@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialSnapshot } from "./defaults";
 import { normaliseSnapshotForPersistence, StorageQuotaError } from "./garbage-collection";
-import type { StorageSnapshot } from "./types";
+import { AuditEventType, HistoryOrigin, HistoryScope, type StorageSnapshot } from "./types";
 
 function baseSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
   const snapshot = createInitialSnapshot();
@@ -72,20 +72,20 @@ describe("normaliseSnapshotForPersistence", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Old" },
           createdAt: "2024-02-01T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         },
         {
           id: "hist-2",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-2",
           snapshot: { title: "Active" },
           createdAt: "2024-02-01T01:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 2
         }
       ]
@@ -98,8 +98,11 @@ describe("normaliseSnapshotForPersistence", () => {
     expect(result.index.map((entry) => entry.id)).toEqual(["doc-2"]);
     expect(result.documents).not.toHaveProperty("doc-1");
     expect(result.history.map((entry) => entry.id)).toEqual(["hist-2"]);
-    expect(result.audit.at(-2)).toMatchObject({ type: "document.purged" });
-    expect(result.audit.at(-1)).toMatchObject({ type: "history.pruned", metadata: { reason: "documentPurged" } });
+    expect(result.audit.at(-2)).toMatchObject({ type: AuditEventType.DocumentPurged });
+    expect(result.audit.at(-1)).toMatchObject({
+      type: AuditEventType.HistoryPruned,
+      metadata: { reason: "documentPurged" }
+    });
     expect(result.meta.approxSizeBytes).toBeGreaterThan(0);
   });
 
@@ -113,20 +116,20 @@ describe("normaliseSnapshotForPersistence", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { content: "x".repeat(600) },
           createdAt: "2024-02-01T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         },
         {
           id: "hist-2",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { content: "x".repeat(600) },
           createdAt: "2024-02-01T01:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 2
         }
       ]
@@ -138,7 +141,7 @@ describe("normaliseSnapshotForPersistence", () => {
 
     expect(result.history).toHaveLength(0);
     const prunedEntry = result.audit.find(
-      (entry) => entry.type === "history.pruned" && entry.metadata?.reason === "quota"
+      (entry) => entry.type === AuditEventType.HistoryPruned && entry.metadata?.reason === "quota"
     );
     expect(prunedEntry).toBeDefined();
   });
@@ -176,7 +179,7 @@ describe("normaliseSnapshotForPersistence", () => {
       now: () => "2024-02-10T00:00:00.000Z"
     });
 
-    expect(result.audit.at(-1)).toMatchObject({ type: "storage.quota.warning" });
+    expect(result.audit.at(-1)).toMatchObject({ type: AuditEventType.StorageQuotaWarning });
     expect(result.meta.approxSizeBytes).toBeGreaterThan(result.config.quotaWarningBytes);
   });
 

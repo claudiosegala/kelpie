@@ -3,7 +3,14 @@ import { createStorageCore } from "./core";
 import { createDefaultConfiguration } from "./defaults";
 import { StorageCorruptionError } from "./driver";
 import type { StorageDriver } from "./driver";
-import type { StorageSnapshot } from "./types";
+import {
+  AuditEventType,
+  HistoryOrigin,
+  HistoryScope,
+  StorageBroadcastOrigin,
+  StorageBroadcastScope,
+  type StorageSnapshot
+} from "./types";
 import { registerMigrationForTesting } from "./migrations";
 
 function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
@@ -176,18 +183,18 @@ describe("createStorageCore", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-123",
           snapshot: {},
           createdAt: "2024-01-02T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         }
       ],
       audit: [
         {
           id: "audit-1",
-          type: "document.updated",
+          type: AuditEventType.DocumentUpdated,
           createdAt: "2024-01-02T00:00:00.000Z"
         }
       ]
@@ -213,9 +220,15 @@ describe("createStorageCore", () => {
     expect(core.getState().snapshot).toEqual(savedSnapshot);
     expect(core.getState().settings).toEqual(savedSnapshot.settings);
     expect(broadcastSpy).toHaveBeenCalledTimes(1);
-    expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
-      driver
-    });
+    expect(broadcastSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: StorageBroadcastScope.Snapshot,
+        origin: StorageBroadcastOrigin.Local
+      }),
+      {
+        driver
+      }
+    );
   });
 
   it("runs migrations for older snapshots and persists the result", () => {
@@ -315,9 +328,15 @@ describe("createStorageCore", () => {
     expect(core.getState().snapshot).toEqual(savedSnapshot);
     expect(core.getState().settings).toEqual(updated.settings);
     expect(broadcastSpy).toHaveBeenCalledTimes(1);
-    expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
-      driver
-    });
+    expect(broadcastSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: StorageBroadcastScope.Snapshot,
+        origin: StorageBroadcastOrigin.Local
+      }),
+      {
+        driver
+      }
+    );
   });
 
   it("persists document mutations when returning a new snapshot reference", () => {
@@ -503,11 +522,11 @@ describe("createStorageCore", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-123",
           snapshot: { title: "Doc", content: "Hello" },
           createdAt: "2024-01-01T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         }
       ]
@@ -518,22 +537,24 @@ describe("createStorageCore", () => {
     const core = createStorageCore({ driver, now: () => "2024-01-03T00:00:00.000Z" });
 
     const result = core.history.capture({
-      scope: "document",
+      scope: HistoryScope.Document,
       refId: "doc-123",
       snapshot: { title: "Doc", content: "Updated" },
-      origin: "toolbar"
+      origin: HistoryOrigin.Toolbar
     });
 
-    expect(result.entry.origin).toBe("toolbar");
+    expect(result.entry.origin).toBe(HistoryOrigin.Toolbar);
     expect(result.entry.sequence).toBe(2);
     expect(result.pruned).toHaveLength(1);
     expect(saveSpy).toHaveBeenCalledTimes(1);
 
     const snapshot = core.getState().snapshot;
     expect(snapshot.history).toHaveLength(1);
-    expect(snapshot.history[0]?.origin).toBe("toolbar");
-    expect(snapshot.audit.at(-1)?.type).toBe("history.pruned");
-    expect(core.history.timeline({ scope: "document", refId: "doc-123" }).cursor?.origin).toBe("toolbar");
+    expect(snapshot.history[0]?.origin).toBe(HistoryOrigin.Toolbar);
+    expect(snapshot.audit.at(-1)?.type).toBe(AuditEventType.HistoryPruned);
+    expect(core.history.timeline({ scope: HistoryScope.Document, refId: "doc-123" }).cursor?.origin).toBe(
+      HistoryOrigin.Toolbar
+    );
   });
 
   it("maintains undo/redo stacks across snapshot updates", () => {
@@ -560,20 +581,20 @@ describe("createStorageCore", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-123",
           snapshot: { title: "Doc", content: "Initial" },
           createdAt: "2024-01-01T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         },
         {
           id: "hist-2",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-123",
           snapshot: { title: "Doc", content: "Intermediate" },
           createdAt: "2024-01-02T00:00:00.000Z",
-          origin: "keyboard",
+          origin: HistoryOrigin.Keyboard,
           sequence: 2
         }
       ]
@@ -584,15 +605,18 @@ describe("createStorageCore", () => {
     const core = createStorageCore({ driver, now: () => "2024-01-03T00:00:00.000Z" });
 
     const undoEntry = core.history.undo(
-      { scope: "document", refId: "doc-123" },
+      { scope: HistoryScope.Document, refId: "doc-123" },
       {
         snapshot: { title: "Doc", content: "Current" },
-        origin: "toolbar"
+        origin: HistoryOrigin.Toolbar
       }
     );
 
     expect(undoEntry?.id).toBe("hist-2");
-    const timelineAfterUndo = core.history.timeline({ scope: "document", refId: "doc-123" });
+    const timelineAfterUndo = core.history.timeline({
+      scope: HistoryScope.Document,
+      refId: "doc-123"
+    });
     expect(timelineAfterUndo.cursor?.id).toBe("hist-1");
     expect(timelineAfterUndo.future).toHaveLength(1);
 
@@ -610,10 +634,13 @@ describe("createStorageCore", () => {
       } satisfies StorageSnapshot;
     });
 
-    const redoEntry = core.history.redo({ scope: "document", refId: "doc-123" });
-    expect(redoEntry?.origin).toBe("toolbar");
+    const redoEntry = core.history.redo({ scope: HistoryScope.Document, refId: "doc-123" });
+    expect(redoEntry?.origin).toBe(HistoryOrigin.Toolbar);
 
-    const timelineAfterRedo = core.history.timeline({ scope: "document", refId: "doc-123" });
+    const timelineAfterRedo = core.history.timeline({
+      scope: HistoryScope.Document,
+      refId: "doc-123"
+    });
     expect(timelineAfterRedo.cursor?.id).toBe("hist-2");
     expect(timelineAfterRedo.future).toHaveLength(0);
   });

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { createStorageEngine } from "./engine";
 import type { StorageDriver } from "./driver";
-import type { StorageSnapshot } from "./types";
+import { HistoryOrigin, HistoryScope, type StorageSnapshot } from "./types";
 
 function createSnapshot(): StorageSnapshot {
   return {
@@ -151,14 +151,14 @@ describe("createStorageEngine", () => {
     const engine = createStorageEngine({ driver, now: () => "2024-01-03T00:00:00.000Z" });
 
     engine.history.capture({
-      scope: "document",
+      scope: HistoryScope.Document,
       refId: "doc-123",
       snapshot: { title: "Doc", content: "Updated" },
-      origin: "toolbar"
+      origin: HistoryOrigin.Toolbar
     });
 
     expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(get(engine.snapshot).history).toHaveLength(1);
-    expect(get(engine.snapshot).history[0]?.origin).toBe("toolbar");
+    expect(get(engine.snapshot).history[0]?.origin).toBe(HistoryOrigin.Toolbar);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { captureHistorySnapshot, createHistoryCache, getHistoryTimeline, redoHistory, undoHistory } from "./history";
-import type { HistoryEntry, StorageSnapshot } from "./types";
+import { AuditEventType, HistoryOrigin, HistoryScope, type HistoryEntry, type StorageSnapshot } from "./types";
 
 const BASE_CONFIG = {
   debounce: { writeMs: 500, broadcastMs: 200 },
@@ -68,17 +68,17 @@ describe("history utilities", () => {
     const { snapshot: nextSnapshot, entry } = captureHistorySnapshot(
       snapshot,
       {
-        scope: "document",
+        scope: HistoryScope.Document,
         refId: "doc-1",
         snapshot: { title: "Doc", content: "Hello" },
-        origin: "api"
+        origin: HistoryOrigin.Api
       },
       { now: () => "2024-01-02T00:00:00.000Z" }
     );
 
     expect(entry.sequence).toBe(1);
     expect(nextSnapshot.history).toHaveLength(1);
-    expect((nextSnapshot.history[0] as HistoryEntry).origin).toBe("api");
+    expect((nextSnapshot.history[0] as HistoryEntry).origin).toBe(HistoryOrigin.Api);
   });
 
   it("prunes entries outside the retention window and records an audit entry", () => {
@@ -94,11 +94,11 @@ describe("history utilities", () => {
       history: [
         {
           id: "hist-old",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Doc" },
           createdAt: "2024-01-01T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         }
       ]
@@ -111,19 +111,19 @@ describe("history utilities", () => {
     } = captureHistorySnapshot(
       snapshot,
       {
-        scope: "document",
+        scope: HistoryScope.Document,
         refId: "doc-1",
         snapshot: { title: "Doc", content: "Hello" },
-        origin: "toolbar"
+        origin: HistoryOrigin.Toolbar
       },
       { now: () => "2024-01-03T00:00:00.000Z" }
     );
 
     expect(pruned).toHaveLength(1);
     expect(nextSnapshot.history).toHaveLength(1);
-    expect(nextSnapshot.history[0]?.origin).toBe("toolbar");
+    expect(nextSnapshot.history[0]?.origin).toBe(HistoryOrigin.Toolbar);
     expect(auditEntry).not.toBeNull();
-    expect(auditEntry?.type).toBe("history.pruned");
+    expect(auditEntry?.type).toBe(AuditEventType.HistoryPruned);
     expect(auditEntry?.metadata).toMatchObject({ count: 1 });
   });
 
@@ -137,7 +137,7 @@ describe("history utilities", () => {
       audit: [
         {
           id: "audit-old",
-          type: "document.created",
+          type: AuditEventType.DocumentCreated,
           createdAt: "2024-01-01T00:00:00.000Z",
           metadata: { id: "doc-1" }
         }
@@ -145,11 +145,11 @@ describe("history utilities", () => {
       history: [
         {
           id: "hist-old",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Doc" },
           createdAt: "2024-01-01T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         }
       ]
@@ -158,16 +158,16 @@ describe("history utilities", () => {
     const { snapshot: nextSnapshot } = captureHistorySnapshot(
       snapshot,
       {
-        scope: "document",
+        scope: HistoryScope.Document,
         refId: "doc-1",
         snapshot: { title: "Doc", content: "Hello" },
-        origin: "toolbar"
+        origin: HistoryOrigin.Toolbar
       },
       { now: () => "2024-01-05T00:00:00.000Z" }
     );
 
     expect(nextSnapshot.audit).toHaveLength(1);
-    expect(nextSnapshot.audit[0]?.type).toBe("history.pruned");
+    expect(nextSnapshot.audit[0]?.type).toBe(AuditEventType.HistoryPruned);
   });
 
   it("enforces the history entry cap", () => {
@@ -183,20 +183,20 @@ describe("history utilities", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Doc" },
           createdAt: "2024-01-02T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         },
         {
           id: "hist-2",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Doc", content: "Updated" },
           createdAt: "2024-01-03T00:00:00.000Z",
-          origin: "keyboard",
+          origin: HistoryOrigin.Keyboard,
           sequence: 2
         }
       ]
@@ -205,10 +205,10 @@ describe("history utilities", () => {
     const { snapshot: nextSnapshot, pruned } = captureHistorySnapshot(
       snapshot,
       {
-        scope: "document",
+        scope: HistoryScope.Document,
         refId: "doc-1",
         snapshot: { title: "Doc", content: "Latest" },
-        origin: "toolbar"
+        origin: HistoryOrigin.Toolbar
       },
       { now: () => "2024-01-04T00:00:00.000Z" }
     );
@@ -216,7 +216,7 @@ describe("history utilities", () => {
     expect(nextSnapshot.history).toHaveLength(2);
     expect(pruned[0]?.id).toBe("hist-1");
     expect(nextSnapshot.history[0]?.id).toBe("hist-2");
-    expect(nextSnapshot.history[1]?.origin).toBe("toolbar");
+    expect(nextSnapshot.history[1]?.origin).toBe(HistoryOrigin.Toolbar);
   });
 
   it("supports undo/redo timelines per document", () => {
@@ -224,50 +224,50 @@ describe("history utilities", () => {
       history: [
         {
           id: "hist-1",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Doc", content: "Initial" },
           createdAt: "2024-01-02T00:00:00.000Z",
-          origin: "api",
+          origin: HistoryOrigin.Api,
           sequence: 1
         },
         {
           id: "hist-2",
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "doc-1",
           snapshot: { title: "Doc", content: "Updated" },
           createdAt: "2024-01-03T00:00:00.000Z",
-          origin: "keyboard",
+          origin: HistoryOrigin.Keyboard,
           sequence: 2
         }
       ]
     });
 
     const cache = createHistoryCache(snapshot);
-    const timelineBefore = getHistoryTimeline(cache, { scope: "document", refId: "doc-1" });
+    const timelineBefore = getHistoryTimeline(cache, { scope: HistoryScope.Document, refId: "doc-1" });
     expect(timelineBefore.cursor?.id).toBe("hist-2");
     expect(timelineBefore.past).toHaveLength(1);
 
     const undoResult = undoHistory(
       cache,
-      { scope: "document", refId: "doc-1" },
+      { scope: HistoryScope.Document, refId: "doc-1" },
       {
         snapshot: { title: "Doc", content: "New" },
-        origin: "toolbar"
+        origin: HistoryOrigin.Toolbar
       },
       { now: () => "2024-01-04T00:00:00.000Z" }
     );
 
     expect(undoResult.entry?.id).toBe("hist-2");
 
-    const afterUndo = getHistoryTimeline(cache, { scope: "document", refId: "doc-1" });
+    const afterUndo = getHistoryTimeline(cache, { scope: HistoryScope.Document, refId: "doc-1" });
     expect(afterUndo.cursor?.id).toBe("hist-1");
-    expect(afterUndo.future[0]?.origin).toBe("toolbar");
+    expect(afterUndo.future[0]?.origin).toBe(HistoryOrigin.Toolbar);
 
-    const redoResult = redoHistory(cache, { scope: "document", refId: "doc-1" });
-    expect(redoResult.entry?.origin).toBe("toolbar");
+    const redoResult = redoHistory(cache, { scope: HistoryScope.Document, refId: "doc-1" });
+    expect(redoResult.entry?.origin).toBe(HistoryOrigin.Toolbar);
 
-    const afterRedo = getHistoryTimeline(cache, { scope: "document", refId: "doc-1" });
+    const afterRedo = getHistoryTimeline(cache, { scope: HistoryScope.Document, refId: "doc-1" });
     expect(afterRedo.cursor?.id).toBe("hist-2");
     expect(afterRedo.future).toHaveLength(0);
     expect(afterRedo.past[0]?.id).toBe("hist-1");
@@ -275,7 +275,11 @@ describe("history utilities", () => {
 
   it("returns null when undoing without history", () => {
     const cache = createHistoryCache(createSnapshot());
-    const { entry } = undoHistory(cache, { scope: "document", refId: "doc-1" }, { snapshot: {}, origin: "api" });
+    const { entry } = undoHistory(
+      cache,
+      { scope: HistoryScope.Document, refId: "doc-1" },
+      { snapshot: {}, origin: HistoryOrigin.Api }
+    );
     expect(entry).toBeNull();
   });
 
@@ -285,10 +289,10 @@ describe("history utilities", () => {
       captureHistorySnapshot(
         snapshot,
         {
-          scope: "document",
+          scope: HistoryScope.Document,
           refId: "missing",
           snapshot: {},
-          origin: "api"
+          origin: HistoryOrigin.Api
         },
         { now: () => "2024-01-02T00:00:00.000Z" }
       )
@@ -301,10 +305,10 @@ describe("history utilities", () => {
       captureHistorySnapshot(
         snapshot,
         {
-          scope: "settings",
+          scope: HistoryScope.Settings,
           refId: "doc-1",
           snapshot: {},
-          origin: "api"
+          origin: HistoryOrigin.Api
         },
         { now: () => "2024-01-02T00:00:00.000Z" }
       )
