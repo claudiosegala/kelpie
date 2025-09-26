@@ -14,16 +14,11 @@
     setViewMode(id);
   }
 
-  function viewButtonClasses(id: ViewMode): string {
-    const isActive = $shellState.viewMode === id;
+  const baseButtonClasses =
+    "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-base-100/70 text-base-content/80 shadow-none transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/70";
 
-    return [
-      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-base-100/70 text-base-content/80 shadow-none transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/70",
-      isActive
-        ? "bg-primary text-primary-content shadow-lg shadow-primary/30 ring-2 ring-primary/70"
-        : "hover:border-base-300 hover:bg-base-200/70 hover:text-base-content"
-    ].join(" ");
-  }
+  const activeButtonClasses = "bg-primary text-primary-content shadow-lg shadow-primary/30 ring-2 ring-primary/70";
+  const inactiveButtonClasses = "hover:border-base-300 hover:bg-base-200/70 hover:text-base-content";
 </script>
 
 <div
@@ -34,7 +29,7 @@
   {#each viewOptions as option (option.id)}
     <button
       type="button"
-      class={viewButtonClasses(option.id)}
+      class={`${baseButtonClasses} ${$shellState.viewMode === option.id ? activeButtonClasses : inactiveButtonClasses}`}
       on:click={() => handleViewChange(option.id)}
       aria-pressed={$shellState.viewMode === option.id}
       aria-label={option.label}
