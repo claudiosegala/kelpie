@@ -4,6 +4,7 @@
   import { onDestroy } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import { shellState, startLayoutWatcher } from "$lib/stores/shell";
+  import { isPanelAllowedInMode } from "./contracts";
   import { getVisiblePanels, type PanelDefinition } from "./panels";
 
   export let version = "0.0.0";
@@ -43,7 +44,7 @@
       <section
         class={panelClasses(panel)}
         aria-label={panel.label}
-        data-active={panel.isVisible(viewMode)}
+        data-active={isPanelAllowedInMode(panel.id, viewMode)}
         data-panel={panel.id}
       >
         <div class="app-shell__panel-content">
