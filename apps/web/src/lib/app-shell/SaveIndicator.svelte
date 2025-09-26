@@ -6,14 +6,15 @@
   $: status = $saveStatus;
   $: statusLabel = status.message;
   $: lastSavedAt = status.timestamp && status.kind === "saved" ? new Date(status.timestamp) : undefined;
+  $: formattedTimestamp = lastSavedAt?.toLocaleTimeString();
   const localSaveTooltip =
     "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
   const errorTooltip =
     "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
   $: tooltipMessage = (() => {
     const base = status.kind === "error" ? errorTooltip : localSaveTooltip;
-    if (lastSavedAt) {
-      return `${base}\nLast saved at ${lastSavedAt.toLocaleTimeString()}.`;
+    if (formattedTimestamp) {
+      return `${base}\nLast saved at ${formattedTimestamp}.`;
     }
     return base;
   })();
@@ -57,10 +58,16 @@
     tabindex="0"
   >
     <div class="flex items-center gap-2">
-      {#if status.kind === "saving"}
-        <span class="badge badge-xs animate-pulse border border-info/40 bg-info/20 text-info/90">&nbsp;</span>
-      {/if}
+      <span
+        class="badge badge-xs border border-info/40 bg-info/20 text-info/90"
+        class:hidden={status.kind !== "saving"}
+        class:animate-pulse={status.kind === "saving"}
+        aria-hidden="true">&nbsp;</span
+      >
       <span class={`text-sm font-medium tracking-tight ${tone.label}`}>{statusLabel}</span>
+      {#if formattedTimestamp}
+        <span class="text-xs text-base-content/60">({formattedTimestamp})</span>
+      {/if}
     </div>
   </div>
 </div>
