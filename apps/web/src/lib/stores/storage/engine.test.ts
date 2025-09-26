@@ -184,6 +184,39 @@ describe("createStorageEngine", () => {
     expect(get(engine.settings)).toEqual(savedSnapshot.settings);
   });
 
+  it("exposes a config store that stays in sync with snapshot updates", () => {
+    const baseline = createSnapshot({
+      config: {
+        ...createSnapshot().config,
+        debounce: { writeMs: 250, broadcastMs: 125 },
+        historyRetentionDays: 14,
+        historyEntryCap: 75,
+        auditEntryCap: 40,
+        softDeleteRetentionDays: 10
+      }
+    });
+    const updated = {
+      ...baseline,
+      config: {
+        ...baseline.config,
+        debounce: { writeMs: 1000, broadcastMs: 400 },
+        historyRetentionDays: 30,
+        historyEntryCap: 120
+      }
+    } satisfies StorageSnapshot;
+
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver });
+    expect(get(engine.config)).toEqual(baseline.config);
+
+    const changed = engine.update(() => updated);
+
+    expect(changed).toBe(true);
+    expect(saveSpy).toHaveBeenCalledWith(updated);
+    expect(get(engine.config)).toEqual(updated.config);
+  });
+
   it("persists updates when the updater returns a new snapshot", () => {
     const baseline = createSnapshot();
     const updated = {
@@ -233,5 +266,26 @@ describe("createStorageEngine", () => {
     ).toThrowError("storage.update must return a snapshot");
     expect(get(engine.snapshot)).toEqual(baseline);
     expect(saveSpy).not.toHaveBeenCalled();
+  });
+
+  it("resets the config store to default values", () => {
+    const populated = createSnapshot({
+      config: {
+        ...createSnapshot().config,
+        debounce: { writeMs: 50, broadcastMs: 25 },
+        historyRetentionDays: 2,
+        historyEntryCap: 10,
+        auditEntryCap: 5,
+        softDeleteRetentionDays: 1
+      }
+    });
+
+    loadSpy.mockReturnValue(populated);
+
+    const engine = createStorageEngine({ driver });
+    engine.reset();
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(get(engine.config)).toEqual(createDefaultConfiguration());
   });
 });
