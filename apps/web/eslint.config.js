@@ -5,6 +5,9 @@ import svelteParser from "svelte-eslint-parser";
 import globals from "globals";
 
 export default [
+  {
+    ignores: [".svelte-kit/**", "build/**"]
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...svelte.configs["flat/recommended"],

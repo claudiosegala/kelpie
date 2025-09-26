@@ -69,12 +69,74 @@
     </div>
   </div>
 
+  <div class="navbar-center flex flex-1 items-center justify-center">
+    <div
+      class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
+      role="group"
+      aria-label="Select workspace mode"
+      data-testid="view-mode-toggle"
+    >
+      {#each viewOptions as option (option.id)}
+        <button
+          type="button"
+          class={viewButtonClasses(option.id)}
+          on:click={() => handleViewChange(option.id)}
+          aria-pressed={$shellState.viewMode === option.id}
+          aria-label={option.label}
+          title={option.label}
+          data-testid={`view-mode-${option.id}`}
+        >
+          {#if option.id === "editor-preview"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              class="h-4 w-4"
+            >
+              <rect x="3.5" y="5.5" width="7" height="13" rx="1.5" stroke-width="1.5" />
+              <rect x="13.5" y="5.5" width="7" height="13" rx="1.5" stroke-width="1.5" />
+            </svg>
+          {:else if option.id === "preview-only"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              class="h-4 w-4"
+            >
+              <path stroke-width="1.5" d="M3 12s3.5-5.5 9-5.5S21 12 21 12s-3.5 5.5-9 5.5S3 12 3 12Z" />
+              <circle cx="12" cy="12" r="2.5" stroke-width="1.5" />
+            </svg>
+          {:else}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              class="h-4 w-4"
+            >
+              <path
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m12 4.75 1.28.74a1 1 0 0 0 1.46-.54l.42-1.43 2.06.6-.06 1.5a1 1 0 0 0 .86 1.02l1.47.23-.32 2.13-1.42.23a1 1 0 0 0-.83 1.17l.27 1.45-1.97.9-.8-1.22a1 1 0 0 0-1.32-.32l-1.28.74-1.28-.74a1 1 0 0 0-1.46.54l-.42 1.43-2.06-.6.06-1.5a1 1 0 0 0-.86-1.02l-1.47-.23.32-2.13 1.42-.23a1 1 0 0 0 .83-1.17l-.27-1.45 1.97-.9.8 1.22a1 1 0 0 0 1.32.32Z"
+              />
+              <circle cx="12" cy="12" r="2.25" stroke-width="1.5" />
+            </svg>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  </div>
+
   <div class="flex flex-1 flex-wrap items-center justify-end gap-3 sm:gap-4">
     {#if $shellState.layout === "mobile"}
       <div
         class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
         role="group"
         aria-label="Select active panel"
+        data-testid="panel-toggle-group"
       >
         {#each PANEL_ORDER as panel (panel)}
           <button
@@ -85,6 +147,7 @@
             aria-label={panelLabels[panel]}
             title={panelLabels[panel]}
             aria-pressed={$shellState.activePanel === panel}
+            data-testid={`panel-toggle-${panel}`}
           >
             {#if panel === "editor"}
               <svg

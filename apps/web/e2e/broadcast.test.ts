@@ -27,7 +27,7 @@ test.describe("storage broadcast propagation", () => {
       });
 
       await sender.evaluate(async () => {
-        const { scheduleBroadcast } = await import("/src/lib/stores/storage/engine.ts");
+        const { scheduleBroadcast } = await import("/src/lib/stores/storage/broadcast.ts");
         scheduleBroadcast({
           scope: "settings",
           updatedAt: "2024-02-01T00:00:00.000Z",
@@ -85,7 +85,7 @@ test.describe("storage broadcast propagation", () => {
       });
 
       await sender.evaluate(async () => {
-        const { scheduleBroadcast } = await import("/src/lib/stores/storage/engine.ts");
+        const { scheduleBroadcast } = await import("/src/lib/stores/storage/broadcast.ts");
         scheduleBroadcast({
           scope: "history",
           updatedAt: "2024-02-02T00:00:00.000Z",

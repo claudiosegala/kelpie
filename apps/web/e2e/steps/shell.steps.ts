@@ -5,15 +5,39 @@ const { When, Then } = createBdd();
 
 const layoutSelector = "div[data-layout][data-mode]";
 
+const viewModeIds = new Map<string, string>([
+  ["Editor & preview", "editor-preview"],
+  ["Preview", "preview-only"],
+  ["Settings", "settings"]
+]);
+
+const panelIds = new Map<string, string>([
+  ["Editor", "editor"],
+  ["Code editor", "editor"],
+  ["Preview", "preview"],
+  ["Settings", "settings"]
+]);
+
+function getTestId(map: Map<string, string>, label: string, kind: string): string {
+  const id = map.get(label);
+  if (!id) {
+    throw new Error(`Unknown ${kind} label: ${label}`);
+  }
+
+  return id;
+}
+
 When("I choose the {string} view mode", async ({ page }, label: string) => {
-  const button = page.getByRole("group", { name: "Panel layout" }).getByRole("button", { name: label, exact: true });
+  const viewModeId = getTestId(viewModeIds, label, "view mode");
+  const button = page.getByTestId(`view-mode-${viewModeId}`);
 
   await expect(button).toBeVisible();
   await button.click();
 });
 
 When("I switch to the {string} panel", async ({ page }, label: string) => {
-  const button = page.getByRole("group", { name: "Active panel" }).getByRole("button", { name: label, exact: true });
+  const panelId = getTestId(panelIds, label, "panel");
+  const button = page.getByTestId(`panel-toggle-${panelId}`);
 
   await expect(button).toBeVisible();
   await expect(button).toBeEnabled();
@@ -56,5 +80,5 @@ Then("the {string} panel should be visible", async ({ page }, label: string) => 
 
 Then("the {string} panel should be hidden", async ({ page }, label: string) => {
   const panel = panelLocator(page, label);
-  await expect(panel).toBeHidden();
+  await expect(panel).toHaveJSProperty("hidden", true);
 });

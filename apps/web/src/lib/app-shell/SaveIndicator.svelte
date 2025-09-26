@@ -5,7 +5,8 @@
 
   $: status = $saveStatus;
   $: statusLabel = status.message;
-  $: timestampLabel = status.timestamp ? new Date(status.timestamp).toLocaleTimeString() : undefined;
+  $: timestampLabel =
+    status.timestamp && status.kind === "saved" ? `(${new Date(status.timestamp).toLocaleTimeString()})` : undefined;
   const localSaveTooltip =
     "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
   const errorTooltip =
@@ -53,7 +54,12 @@
     aria-label={`${statusLabel}. ${tooltipMessage}`}
     tabindex="0"
   >
-    <span class={`text-sm font-medium tracking-tight ${tone.label}`}>{statusLabel}</span>
+    <div class="flex items-center gap-2">
+      {#if status.kind === "saving"}
+        <span class="badge badge-xs animate-pulse border border-info/40 bg-info/20 text-info/90">&nbsp;</span>
+      {/if}
+       <span class={`text-sm font-medium tracking-tight ${tone.label}`}>{statusLabel}</span>
+    </div>
     {#if timestampLabel && status.kind === "saved"}
       <span class={`text-[0.65rem] ${tone.timestamp}`}>{timestampLabel}</span>
     {/if}
