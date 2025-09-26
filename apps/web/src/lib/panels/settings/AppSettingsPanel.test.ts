@@ -27,4 +27,11 @@ describe("AppSettingsPanel", () => {
 
     expect(screen.getByText("Hook up to preview pipeline in a follow-up task.")).toBeVisible();
   });
+
+  it("renders the storage inspector tooling", () => {
+    render(AppSettingsPanel);
+
+    expect(screen.getByRole("heading", { name: "Storage Inspector" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Reset storage" })).toBeVisible();
+  });
 });

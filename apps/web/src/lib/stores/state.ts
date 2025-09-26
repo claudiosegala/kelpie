@@ -8,7 +8,8 @@ import {
   createIndexEntryFromDocument,
   createPrimaryDocument
 } from "./state.constants";
-import { createStorageEngine, type DocumentSnapshot, type StorageSnapshot, type UiSettings } from "./storage";
+import type { DocumentSnapshot, StorageSnapshot, UiSettings } from "./storage";
+import { storage } from "./storage/instance";
 
 export type PersistedState = {
   documentId: string;
@@ -23,8 +24,6 @@ export type PersistedState = {
     documentUpdatedAt: string | null;
   };
 };
-
-const storage = createStorageEngine();
 
 function resolveActiveDocumentId(snapshot: StorageSnapshot): string {
   const activeId = snapshot.settings.lastActiveDocumentId;

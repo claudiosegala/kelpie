@@ -1,6 +1,8 @@
 <svelte:options runes={false} />
 
 <script lang="ts">
+  import StorageInspector from "$lib/components/storage/StorageInspector.svelte";
+
   export type DebounceOption = 125 | 250 | 500 | 750 | 1000;
 
   export interface ShellSettings {
@@ -34,5 +36,7 @@
         <small class="text-xs text-base-content/60">Hook up to preview pipeline in a follow-up task.</small>
       </fieldset>
     </div>
+
+    <StorageInspector />
   </div>
 </section>

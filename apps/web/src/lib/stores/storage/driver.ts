@@ -10,6 +10,8 @@ export type StorageLoadOptions = {
 export type CreateLocalStorageDriverOptions = {
   now?: () => IsoDateTimeString;
   backupLimit?: number;
+  encrypt?: (payload: string) => string;
+  decrypt?: (payload: string) => string;
 };
 
 export type StorageDriver = {
@@ -152,6 +154,8 @@ export function createLocalStorageDriver(key: string, options: CreateLocalStorag
   const checksumKey = `${key}.checksum`;
   const backupPrefix = `${key}.backup.`;
   const fallbackSubscribers = new Set<() => void>();
+  const encrypt = options.encrypt ?? ((payload: string) => payload);
+  const decrypt = options.decrypt ?? ((payload: string) => payload);
 
   let lastSerialised: string | null = null;
   let lastChecksum: string | null = null;
@@ -230,7 +234,8 @@ export function createLocalStorageDriver(key: string, options: CreateLocalStorag
       }
 
       try {
-        const parsed = JSON.parse(raw) as StorageSnapshot;
+        const decoded = decrypt(raw);
+        const parsed = JSON.parse(decoded) as StorageSnapshot;
         lastSerialised = raw;
         lastChecksum = actualChecksum;
         return parsed;
@@ -244,19 +249,20 @@ export function createLocalStorageDriver(key: string, options: CreateLocalStorag
     },
     save(snapshot) {
       const serialised = serialiseSnapshot(snapshot);
-      const checksum = computeChecksum(serialised);
+      const transformed = encrypt(serialised);
+      const checksum = computeChecksum(transformed);
 
-      if (lastSerialised === serialised && lastChecksum === checksum) {
+      if (lastSerialised === transformed && lastChecksum === checksum) {
         return;
       }
 
       const previous = storage.getItem(key);
-      if (previous && previous !== serialised) {
+      if (previous && previous !== transformed) {
         writeBackup(previous);
       }
 
       try {
-        storage.setItem(key, serialised);
+        storage.setItem(key, transformed);
         storage.setItem(checksumKey, checksum);
       } catch (error) {
         if (isQuotaError(error)) {
@@ -265,7 +271,7 @@ export function createLocalStorageDriver(key: string, options: CreateLocalStorag
         throw error;
       }
 
-      lastSerialised = serialised;
+      lastSerialised = transformed;
       lastChecksum = checksum;
 
       notifyFallbackSubscribers();
