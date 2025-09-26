@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
-    "marked": "^15.0.11",
-    "sanitize-html": "^2.13.0"
+    "marked": "^15.0.12",
+    "sanitize-html": "^2.17.0"
   },
   "scripts": {
     "dev": "vite dev",
