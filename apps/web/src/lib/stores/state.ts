@@ -1,7 +1,14 @@
 import { derived } from "svelte/store";
 import { parseMarkdown, formatTask, type Task } from "../parsing/parseTask";
 import { markError, markSaved, markSaving } from "./persistence";
-import { createStorageEngine, type DocumentIndexEntry, type DocumentSnapshot, type StorageSnapshot } from "./storage";
+import {
+  DEFAULT_DOCUMENT_CONTENT,
+  PRIMARY_DOCUMENT_ID,
+  PRIMARY_DOCUMENT_TITLE,
+  createIndexEntryFromDocument,
+  createPrimaryDocument
+} from "./state.constants";
+import { createStorageEngine, type DocumentSnapshot, type StorageSnapshot, type UiSettings } from "./storage";
 
 export type PersistedState = {
   documentId: string;
@@ -17,104 +24,114 @@ export type PersistedState = {
   };
 };
 
-const defaultFile = `# Welcome to Kelpie 🧭
-
-Kelpie keeps your Markdown to-dos editable anywhere while the app reflects every change in real-time. Use it as a playground to learn how Markdown tasks, metadata, and filters come together.
-
-## Try the guided tour
-
-- [ ] Take the welcome tour _(toggle this to see instant syncing)_
-  - [ ] Edit this sub-task in your editor and watch Kelpie follow along
-- [ ] Add scheduling metadata @due(2024-07-01) @priority(A)
-- [ ] Explore repeating tasks @repeat(1w)
-- [ ] Tag workstreams with #planning #inbox
-- [ ] Mark something done and note the timestamp @done(2024-06-01T09:00:00Z)
-
-> Tip: Paste additional Markdown below to experiment—Kelpie renders a split-pane editor and preview so you can iterate quickly.`;
-
-const PRIMARY_DOCUMENT_ID = "kelpie-primary-document";
-const PRIMARY_DOCUMENT_TITLE = "My tasks";
-
 const storage = createStorageEngine();
+
+function resolveActiveDocumentId(snapshot: StorageSnapshot): string {
+  const activeId = snapshot.settings.lastActiveDocumentId;
+  if (typeof activeId === "string" && snapshot.documents[activeId]) {
+    return activeId;
+  }
+  return PRIMARY_DOCUMENT_ID;
+}
+
+function ensureDocument(
+  documents: StorageSnapshot["documents"],
+  targetId: string,
+  timestamp: string
+): { documents: StorageSnapshot["documents"]; document: DocumentSnapshot; changed: boolean } {
+  const existing = documents[targetId];
+  if (existing) {
+    return { documents, document: existing, changed: false };
+  }
+
+  // At this point the caller resolved the active id to the primary document.
+  const created = createPrimaryDocument(timestamp);
+  return {
+    documents: { ...documents, [targetId]: created },
+    document: created,
+    changed: true
+  };
+}
+
+function ensureIndex(
+  index: StorageSnapshot["index"],
+  document: DocumentSnapshot
+): { index: StorageSnapshot["index"]; changed: boolean } {
+  const entryIndex = index.findIndex((entry) => entry.id === document.id);
+
+  if (entryIndex === -1) {
+    return { index: [...index, createIndexEntryFromDocument(document)], changed: true };
+  }
+
+  const currentEntry = index[entryIndex]!;
+  const shouldRestore =
+    currentEntry.deletedAt !== null || currentEntry.purgeAfter !== null || currentEntry.title !== document.title;
+
+  if (!shouldRestore) {
+    return { index, changed: false };
+  }
+
+  const updatedEntry = {
+    ...currentEntry,
+    title: document.title,
+    updatedAt: document.updatedAt,
+    deletedAt: null,
+    purgeAfter: null
+  };
+
+  return {
+    index: [...index.slice(0, entryIndex), updatedEntry, ...index.slice(entryIndex + 1)],
+    changed: true
+  };
+}
+
+function ensureSettings(
+  settings: UiSettings,
+  targetId: string,
+  timestamp: string,
+  hasOtherChanges: boolean
+): { settings: UiSettings; changed: boolean } {
+  if (settings.lastActiveDocumentId !== targetId) {
+    return {
+      settings: { ...settings, lastActiveDocumentId: targetId, updatedAt: timestamp },
+      changed: true
+    };
+  }
+
+  if (!hasOtherChanges) {
+    return { settings, changed: false };
+  }
+
+  return {
+    settings: { ...settings, updatedAt: timestamp },
+    changed: true
+  };
+}
 
 function ensurePrimaryDocument(snapshot: StorageSnapshot): StorageSnapshot {
   const now = new Date().toISOString();
-  let documents = snapshot.documents;
-  let index = snapshot.index;
-  let settings = snapshot.settings;
-  let changed = false;
+  const targetId = resolveActiveDocumentId(snapshot);
 
-  const activeId = settings.lastActiveDocumentId;
-  let targetId = PRIMARY_DOCUMENT_ID;
+  const { documents, document, changed: documentsChanged } = ensureDocument(snapshot.documents, targetId, now);
 
-  if (typeof activeId === "string" && documents[activeId]) {
-    targetId = activeId;
-  }
+  const { index, changed: indexChanged } = ensureIndex(snapshot.index, document);
+  const { settings, changed: settingsChanged } = ensureSettings(
+    snapshot.settings,
+    targetId,
+    now,
+    documentsChanged || indexChanged
+  );
 
-  if (!documents[targetId]) {
-    const createdAt = now;
-    const document: DocumentSnapshot = {
-      id: targetId,
-      title: PRIMARY_DOCUMENT_TITLE,
-      content: defaultFile,
-      createdAt,
-      updatedAt: createdAt
-    };
-    documents = { ...documents, [targetId]: document };
-    changed = true;
-  }
-
-  const resolvedDocument = documents[targetId];
-  if (!resolvedDocument) {
+  if (!documentsChanged && !indexChanged && !settingsChanged) {
     return snapshot;
   }
-  const entryIndex = index.findIndex((entry) => entry.id === targetId);
 
-  if (entryIndex === -1) {
-    const entry: DocumentIndexEntry = {
-      id: targetId,
-      title: resolvedDocument.title,
-      createdAt: resolvedDocument.createdAt,
-      updatedAt: resolvedDocument.updatedAt,
-      deletedAt: null,
-      purgeAfter: null
-    };
-    index = [...index, entry];
-    changed = true;
-  } else {
-    const currentEntry = index[entryIndex]!;
-    const shouldRestore =
-      currentEntry.deletedAt !== null ||
-      currentEntry.purgeAfter !== null ||
-      currentEntry.title !== resolvedDocument.title;
-    if (shouldRestore) {
-      const updatedEntry: DocumentIndexEntry = {
-        ...currentEntry,
-        title: resolvedDocument.title,
-        updatedAt: resolvedDocument.updatedAt,
-        deletedAt: null,
-        purgeAfter: null
-      };
-      index = [...index.slice(0, entryIndex), updatedEntry, ...index.slice(entryIndex + 1)];
-      changed = true;
-    }
-  }
-
-  if (settings.lastActiveDocumentId !== targetId) {
-    settings = { ...settings, lastActiveDocumentId: targetId, updatedAt: now };
-    changed = true;
-  } else if (changed) {
-    settings = { ...settings, updatedAt: now };
-  }
-
-  return changed
-    ? {
-        ...snapshot,
-        documents,
-        index,
-        settings
-      }
-    : snapshot;
+  return {
+    ...snapshot,
+    documents,
+    index,
+    settings
+  };
 }
 
 storage.update(ensurePrimaryDocument);
@@ -125,7 +142,7 @@ export const appState = derived(storage.snapshot, ($snapshot): PersistedState =>
 
   return {
     documentId: activeId,
-    file: activeDocument?.content ?? defaultFile,
+    file: activeDocument?.content ?? DEFAULT_DOCUMENT_CONTENT,
     ui: {
       panes: $snapshot.settings.panes,
       activeFilters: $snapshot.settings.filters
