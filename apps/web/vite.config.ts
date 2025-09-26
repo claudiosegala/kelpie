@@ -10,6 +10,9 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.{test,spec}.{js,ts}"]
   },
+  resolve: {
+    conditions: ["svelte", "browser"]
+  },
   server: {
     fs: {
       allow: [

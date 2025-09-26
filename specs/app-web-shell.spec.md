@@ -158,6 +158,61 @@ This section is for the AI or developers to update after implementation runs.
 
 - **Test files and coverage:**:
   - Unit store coverage: `/apps/web/src/lib/stores/shell.test.ts`
+
+## 16. Save Indicator UX
+
+- The save indicator sits inside the toolbar and is always visible on desktop and mobile.
+- Idle state (`kind = idle`) shows “Saved locally ✓” without a timestamp but still exposes the tooltip that explains offline storage.
+- Saving state pulses with the info tone, displays “Saving locally…” and keeps the tooltip focused on local-first behavior.
+- Saved state switches to the success tone, adds the last saved time in parentheses, and remains focusable for screen-reader re-announcement.
+- Error state swaps to the error tone, keeps the tooltip guidance for retry/export, and surfaces the bubbled error message from persistence.
+- All states expose `aria-label = "<status label>. <tooltip message>"` so assistive tech hears both the current status and next-step guidance.
+
+```gherkin
+Feature: Save indicator communicates persistence state
+  Scenario: Saving state pulses with info tone
+    Given the app shell begins an offline save
+    When the save status is updated to "saving"
+    Then the indicator shows "Saving locally…" with a pulsing badge
+    And it reports the info tone styling
+
+  Scenario: Saved state reports the last save time
+    Given the save status is updated to "saved" with timestamp "2024-06-01T12:00:00Z"
+    Then the indicator shows "Saved locally ✓"
+    And it displays the formatted time in parentheses after the label
+
+  Scenario: Error state surfaces retry guidance
+    Given the save status is updated to "error" with message "Disk full"
+    Then the indicator shows "Disk full"
+    And the tooltip explains how to retry or export the data
+```
+
+## 17. Persistence Store API
+
+- `saveStatus` is a readable Svelte store exposing the current `SaveStatus` contract.
+- `markSaving`, `markSaved`, and `markError` transition the store while stamping the current timestamp.
+- `markError` prefers surfaced `Error.message`, falls back to string values, and otherwise emits a friendly default.
+- `resetSaveStatus` restores the idle contract so unit tests and preview stories start from a known baseline.
+- Tests cover both the store transitions and the Save Indicator component rendering against the spec.
+
+### Updated Test Tracking
+
+- **What has been implemented**:
+  - App shell scaffolding with toolbar, save indicator, and panel slots wired into Svelte stores.
+  - Responsive shell state store with layout detection hooks and persistence status tracking.
+  - Route updated to consume new shell and panel components with placeholder settings panel.
+  - Persistence store reset helper to support deterministic Save Indicator tests.
+  - Save Indicator component verified against idle, saving, saved, and error states in unit tests.
+
+- **What remains to be implemented**:
+  - Hooking undo/redo triggers, debounce configuration, and theme application into the shell contracts.
+  - Toast-based error handling, offline indicator polish, and panel-specific behaviors (settings form wiring, preview interactions).
+  - Browser-mode unit tests covering shell interactions once Playwright/browser runners are available in CI.
+
+- **Test files and coverage:**:
+  - Unit store coverage: `/apps/web/src/lib/stores/shell.test.ts`
+  - Persistence store coverage: `/apps/web/src/lib/stores/persistence.test.ts`
+  - Save indicator coverage: `/apps/web/src/lib/app-shell/SaveIndicator.test.ts`
   - E2E for toolbar state & undo/redo buttons: `/apps/web/e2e/shell-toolbar.test.ts`
   - E2E for save indicator (saving/saved/error): `/apps/web/e2e/shell-save-indicator.test.ts`
   - E2E for debounce & propagation to preview: `/apps/web/e2e/shell-debounce.test.ts`
