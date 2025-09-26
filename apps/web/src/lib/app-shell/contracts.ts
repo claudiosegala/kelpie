@@ -36,14 +36,12 @@ export const ShellLayout = {
 
 export type ShellLayout = (typeof ShellLayout)[keyof typeof ShellLayout];
 
-export const SaveStatusKind = {
-  Idle: "idle",
-  Saving: "saving",
-  Saved: "saved",
-  Error: "error"
-} as const;
-
-export type SaveStatusKind = (typeof SaveStatusKind)[keyof typeof SaveStatusKind];
+export enum SaveStatusKind {
+  Idle = "idle",
+  Saving = "saving",
+  Saved = "saved",
+  Error = "error"
+}
 
 export type SaveStatus =
   | { kind: SaveStatusKind.Idle; message: "Saved locally \u2713"; timestamp: number | null }

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { appendAuditEntries, createAuditEntry } from "./audit";
 import type { StorageSnapshot } from "./types";
 
-function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
+type SnapshotOverrides = Partial<Omit<StorageSnapshot, "config">> & {
+  config?: Partial<StorageSnapshot["config"]>;
+};
+
+function createSnapshot(overrides: SnapshotOverrides = {}): StorageSnapshot {
   const base: StorageSnapshot = {
     meta: {
       version: 1,

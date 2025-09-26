@@ -18,9 +18,7 @@ export const LOCAL_SAVE_TOOLTIP =
 export const ERROR_TOOLTIP =
   "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
 
-export const DEFAULT_KIND = SaveStatusKind.Saved;
-
-export const SAVE_INDICATOR_CONFIG: Record<SaveStatus["kind"], SaveIndicatorView> = {
+export const SAVE_INDICATOR_CONFIG = {
   [SaveStatusKind.Idle]: {
     tone: {
       badge: "border-success/40 bg-success/10 text-success",
@@ -49,9 +47,12 @@ export const SAVE_INDICATOR_CONFIG: Record<SaveStatus["kind"], SaveIndicatorView
     },
     tooltip: ERROR_TOOLTIP
   }
-};
+} satisfies Record<SaveStatus["kind"], SaveIndicatorView>;
 
-const getConfigFor = (kind: SaveStatus["kind"]) => SAVE_INDICATOR_CONFIG[kind] ?? SAVE_INDICATOR_CONFIG[DEFAULT_KIND];
+export const DEFAULT_KIND: SaveStatus["kind"] = SaveStatusKind.Saved;
+
+const getConfigFor = (kind: SaveStatus["kind"]): SaveIndicatorView =>
+  SAVE_INDICATOR_CONFIG[kind] ?? SAVE_INDICATOR_CONFIG[DEFAULT_KIND];
 
 export const toneFor = (kind: SaveStatus["kind"]) => getConfigFor(kind).tone;
 export const tooltipFor = (kind: SaveStatus["kind"]) => getConfigFor(kind).tooltip;

@@ -17,6 +17,7 @@ import {
 } from "./history";
 import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
+import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./instrumentation";
 import {
   AuditEventType,
   StorageBroadcastOrigin,
@@ -28,6 +29,7 @@ import {
   type StorageSnapshot,
   type UiSettings
 } from "./types";
+import { estimateSnapshotSize } from "./size";
 
 export type StorageCoreState = {
   snapshot: StorageSnapshot;
@@ -233,7 +235,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
 
     const annotated = {
       ...seeded,
-      audit: appendAuditEntries(seeded, createAuditEntry("storage.simulatedFirstRun", timestamp))
+      audit: appendAuditEntries(seeded, createAuditEntry(AuditEventType.StorageSimulatedFirstRun, timestamp))
     } satisfies StorageSnapshot;
 
     applySnapshot(annotated, { persist: true, emitBroadcast: true, label: "storage.simulatedFirstRun" });

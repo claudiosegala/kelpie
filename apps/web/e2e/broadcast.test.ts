@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+type BroadcastModule = typeof import("../src/lib/stores/storage/broadcast");
+
 test.describe("storage broadcast propagation", () => {
   test("delivers payloads through BroadcastChannel", async ({ browser }) => {
     const context = await browser.newContext();
@@ -27,7 +29,8 @@ test.describe("storage broadcast propagation", () => {
       });
 
       await sender.evaluate(async () => {
-        const { scheduleBroadcast } = await import("/src/lib/stores/storage/broadcast.ts");
+        const module = (await import("/src/lib/stores/storage/broadcast.ts")) as unknown as BroadcastModule;
+        const { scheduleBroadcast } = module;
         scheduleBroadcast({
           scope: "settings",
           updatedAt: "2024-02-01T00:00:00.000Z",
@@ -85,7 +88,8 @@ test.describe("storage broadcast propagation", () => {
       });
 
       await sender.evaluate(async () => {
-        const { scheduleBroadcast } = await import("/src/lib/stores/storage/broadcast.ts");
+        const module = (await import("/src/lib/stores/storage/broadcast.ts")) as unknown as BroadcastModule;
+        const { scheduleBroadcast } = module;
         scheduleBroadcast({
           scope: "history",
           updatedAt: "2024-02-02T00:00:00.000Z",

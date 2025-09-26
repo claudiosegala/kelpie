@@ -98,7 +98,8 @@ export const AuditEventType = {
   MigrationCompleted: "migration.completed",
   StorageReset: "storage.reset",
   StorageCorruption: "storage.corruption",
-  StorageQuotaWarning: "storage.quota.warning"
+  StorageQuotaWarning: "storage.quota.warning",
+  StorageSimulatedFirstRun: "storage.simulatedFirstRun"
 } as const;
 
 export type AuditEventType = (typeof AuditEventType)[keyof typeof AuditEventType];
