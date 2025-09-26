@@ -55,6 +55,7 @@
   <span
     class={badgeClasses}
     data-kind={status.kind}
+    data-testid="save-indicator"
     aria-live="polite"
     role="status"
     title={tooltipMessage}
