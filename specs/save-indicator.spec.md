@@ -14,8 +14,40 @@ badge with matching iconography, copy, and tooltip guidance for offline-first sa
   `idle`, `saving`, `saved`, and `error`.
 - Imports `SaveIndicatorIcon.svelte` to render the status glyph; the icon component is responsible for choosing the SVG based on
   the provided `kind` and `toneClass`.
+- Pulls shared UI configuration from `save-indicator.config.ts`, which centralizes tone classes, tooltip copy, and timestamp
+  helpers for both the component and tests.
 
-## 3. Visual Anatomy
+## 3. Configuration model
+
+All tone styling and tooltip guidance live in `SAVE_INDICATOR_CONFIG`. The map keys are `SaveStatusKind` values and each entry
+defines:
+
+- `tone.badge` – Tailwind classes applied to the badge container.
+- `tone.icon` – Tailwind classes forwarded to `SaveIndicatorIcon`.
+- `tooltip` – Base tooltip message for that status.
+
+`DEFAULT_KIND` falls back to `saved` so unexpected states borrow the success styling, and `LOCAL_SAVE_TOOLTIP` / `ERROR_TOOLTIP`
+are exported constants reused by the tests.
+
+`save-indicator.config.ts` also exposes `SaveIndicatorTimestampDetails`, `toneFor`, `tooltipFor`, and `getTimestampDetails`, which
+are consumed by both the component and the view-model so tests can assert behaviour without touching component internals.
+
+## 4. View-model layer
+
+`save-indicator.viewmodel.ts` concentrates all derived presentation logic in `buildSaveIndicatorViewModel(status)` so the Svelte
+component only binds to a single reactive object. The view-model contains:
+
+- `kind` / `label` – for data attributes, icon binding, and screen-reader copy.
+- `badgeClasses` / `iconToneClass` – class strings assembled from config tone data and state-specific modifiers (e.g., pulsing
+  while saving).
+- `tooltipMessage` – base tooltip copy optionally appended with timestamp guidance.
+- `timestampDetails` – the formatted chip text and tooltip suffix returned by `getTimestampDetails`.
+- `ariaLabel` – the concatenated label and tooltip so assistive tech hears identical copy to sighted users.
+
+Helpers such as `buildBadgeClasses` keep CSS class concatenation in one place, improving maintainability if the badge needs new
+modifiers in the future.
+
+## 5. Visual Anatomy
 
 - **Tooltip wrapper** – wraps the badge in `tooltip tooltip-bottom` classes so DaisyUI shows contextual guidance on hover or
   focus. All tooltip copy is duplicated in the `title` attribute to support native browser tooltips.
@@ -26,34 +58,45 @@ badge with matching iconography, copy, and tooltip guidance for offline-first sa
 - **Timestamp chip (optional)** – appended in `.indicator__timestamp` whenever the status is `saved` and includes a numeric
   `timestamp`.
 
-## 4. Behaviour
+## 6. Behaviour
 
 1. **Status subscription**
    - The component reacts to `saveStatus` updates immediately via Svelte's `$` auto-subscription.
-   - `statusLabel` mirrors `status.message` verbatim so store copy appears without modifications.
-2. **Tone mapping**
-   - `toneByKind` maps `idle` and `saved` to success styles, `saving` to info styles, and `error` to error styles.
-   - If an unknown status slips through, it gracefully falls back to the `saved` tone classes.
-3. **Tooltip messaging**
-   - `idle`, `saving`, and `saved` states share the local-storage guidance tooltip:
-     "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release."
-   - `error` status swaps to an error guidance tooltip:
-     "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync."
-   - When a saved timestamp exists, the tooltip appends `Last saved at {formatted time}.` on a new line.
-4. **Timestamp formatting**
-   - For `kind === "saved"` with a `timestamp`, the component instantiates `new Date(timestamp)` and renders a localized time in
-     parentheses (via `toLocaleTimeString()`).
-   - Other states omit the timestamp chip entirely.
-5. **Saving animation**
-   - When `kind === "saving"`, the badge gains `indicator--saving animate-pulse` so the UI visibly pulses while persistence is
-     in flight.
-6. **Accessibility**
-   - The badge is marked `role="status"` with `aria-live="polite"` so screen readers announce updates without being intrusive.
-   - `aria-label` concatenates the human-readable message with the tooltip guidance, ensuring non-visual users hear both pieces
-     of context.
-   - `tabindex="0"` keeps the badge reachable by keyboard, and the tooltip wrapper duplicates the content for hover/focus use.
 
-## 5. Assumptions
+- `viewModel.label` mirrors `status.message` verbatim so store copy appears without modifications.
+
+2. **Tone mapping**
+
+- `toneFor(status.kind)` pulls the tone definition from the configuration map.
+- If an unknown status slips through, the helper falls back to the `DEFAULT_KIND` entry.
+
+3. **Tooltip messaging**
+
+- `tooltipFor(status.kind)` resolves the base tooltip text.
+- `idle`, `saving`, and `saved` states share the local-storage guidance tooltip
+  (`LOCAL_SAVE_TOOLTIP`).
+- `error` status swaps to the retry guidance tooltip (`ERROR_TOOLTIP`).
+- When timestamp details are available, `buildSaveIndicatorViewModel` appends `Last saved at {formatted time}.` on a new line.
+
+4. **Timestamp formatting**
+
+- `getTimestampDetails(status)` returns `undefined` for non-saved states.
+- For `kind === "saved"` with a `timestamp`, the helper formats the time via `toLocaleTimeString()` and returns both the badge
+  chip copy (wrapped in parentheses) and the tooltip suffix.
+
+5. **Saving animation**
+
+- `buildBadgeClasses` adds `indicator--saving animate-pulse` when the status is `saving` so the UI visibly pulses while
+  persistence is in flight.
+
+6. **Accessibility**
+
+- The badge is marked `role="status"` with `aria-live="polite"` so screen readers announce updates without being intrusive.
+- `viewModel.ariaLabel` concatenates the human-readable message with the tooltip guidance, ensuring non-visual users hear both
+  pieces of context.
+- `tabindex="0"` keeps the badge reachable by keyboard, and the tooltip wrapper duplicates the content for hover/focus use.
+
+## 7. Assumptions
 
 - The `saveStatus` store is the single source of truth; the component does not accept props to override it.
 - Status messages for `idle`, `saving`, and `saved` are stable strings controlled by the store. Custom copy (e.g., error
@@ -61,7 +104,7 @@ badge with matching iconography, copy, and tooltip guidance for offline-first sa
 - Timestamp values are millisecond epochs. If the store emits `null` or `undefined` timestamps, the component simply hides the
   timestamp UI without logging errors.
 
-## 6. Future Improvements
+## 8. Future Improvements
 
 - Surface relative timestamps ("Saved 2 minutes ago") while retaining a precise absolute time in the tooltip.
 - Offer optional cloud-sync messaging once remote persistence is implemented.
@@ -69,7 +112,7 @@ badge with matching iconography, copy, and tooltip guidance for offline-first sa
 - Localize tooltip copy and the timestamp format using the shell's i18n pipeline.
 - Animate the transition between states (e.g., fade between icons) for smoother perception.
 
-## 7. Testing Guidance
+## 9. Testing Guidance
 
 Unit tests currently live at `/apps/web/src/lib/app-shell/SaveIndicator.test.ts` and should continue to cover:
 

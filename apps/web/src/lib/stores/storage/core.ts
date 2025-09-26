@@ -181,9 +181,9 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
     if (emitBroadcast && changed) {
       broadcast(
         {
-          scope: "snapshot",
+          scope: StorageBroadcastScope.Snapshot,
           updatedAt: now(),
-          origin: "local"
+          origin: StorageBroadcastOrigin.Local
         },
         { driver }
       );

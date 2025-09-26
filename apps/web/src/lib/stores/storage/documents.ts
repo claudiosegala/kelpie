@@ -1,5 +1,12 @@
 import { appendAuditEntries, createAuditEntry } from "./audit";
-import type { DocumentIndex, DocumentIndexEntry, DocumentSnapshot, IsoDateTimeString, StorageSnapshot } from "./types";
+import {
+  AuditEventType,
+  type DocumentIndex,
+  type DocumentIndexEntry,
+  type DocumentSnapshot,
+  type IsoDateTimeString,
+  type StorageSnapshot
+} from "./types";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -67,7 +74,7 @@ export function createDocument(snapshot: StorageSnapshot, options: DocumentCreat
     updatedAt: createdAt
   } satisfies StorageSnapshot["settings"];
 
-  const auditEntry = createAuditEntry("document.created", createdAt, {
+  const auditEntry = createAuditEntry(AuditEventType.DocumentCreated, createdAt, {
     id,
     title
   });
@@ -140,7 +147,7 @@ export function updateDocument(
     updatedAt
   } satisfies StorageSnapshot["settings"];
 
-  const auditEntry = createAuditEntry("document.updated", updatedAt, {
+  const auditEntry = createAuditEntry(AuditEventType.DocumentUpdated, updatedAt, {
     id: documentId,
     fields: changedFields
   });
@@ -194,7 +201,7 @@ export function softDeleteDocument(
     updatedAt: deletedAt
   } satisfies StorageSnapshot["settings"];
 
-  const auditEntry = createAuditEntry("document.deleted", deletedAt, {
+  const auditEntry = createAuditEntry(AuditEventType.DocumentDeleted, deletedAt, {
     id: documentId,
     purgeAfter
   });
@@ -244,7 +251,7 @@ export function restoreDocument(
     updatedAt: restoredAt
   } satisfies StorageSnapshot["settings"];
 
-  const auditEntry = createAuditEntry("document.restored", restoredAt, {
+  const auditEntry = createAuditEntry(AuditEventType.DocumentRestored, restoredAt, {
     id: documentId
   });
 
@@ -276,7 +283,7 @@ export function reorderDocuments(
   const nextIndex: DocumentIndex = [...reorderedActive, ...deletedEntries];
 
   const reorderedAt = options.now?.() ?? resolveNow();
-  const auditEntry = createAuditEntry("document.reordered", reorderedAt, {
+  const auditEntry = createAuditEntry(AuditEventType.DocumentReordered, reorderedAt, {
     before: beforeOrder,
     after: newOrderIds
   });

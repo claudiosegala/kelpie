@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { StorageBroadcast } from "./types";
+import { StorageBroadcastOrigin, StorageBroadcastScope, type StorageBroadcast } from "./types";
 
 const sampleBroadcast: StorageBroadcast = {
-  scope: "settings",
+  scope: StorageBroadcastScope.Settings,
   updatedAt: "2024-01-01T00:00:00.000Z",
-  origin: "local"
+  origin: StorageBroadcastOrigin.Local
 };
 
 function createStorageMock() {
@@ -99,15 +99,15 @@ describe("scheduleBroadcast", () => {
     const { scheduleBroadcast } = await import("./broadcast");
 
     const first: StorageBroadcast = {
-      scope: "config",
+      scope: StorageBroadcastScope.Config,
       updatedAt: "2024-01-02T00:00:00.000Z",
-      origin: "local"
+      origin: StorageBroadcastOrigin.Local
     };
 
     const second: StorageBroadcast = {
-      scope: "documents",
+      scope: StorageBroadcastScope.Documents,
       updatedAt: "2024-01-03T00:00:00.000Z",
-      origin: "external"
+      origin: StorageBroadcastOrigin.External
     };
 
     scheduleBroadcast(first);
@@ -150,6 +150,7 @@ describe("scheduleBroadcast", () => {
     vi.resetModules();
 
     const storage = createStorageMock();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const postMessageSpy = vi.fn(() => {
       throw new Error("post failed");
     });
@@ -185,11 +186,12 @@ describe("scheduleBroadcast", () => {
     expect(postMessageSpy).toHaveBeenCalledTimes(1);
     expect(close).toHaveBeenCalledTimes(1);
     expect(storage.setItem).toHaveBeenCalledTimes(1);
+    expect(warnSpy).toHaveBeenCalledWith("Kelpie storage: failed to post broadcast message", expect.any(Error));
 
     const followUp: StorageBroadcast = {
-      scope: "history",
+      scope: StorageBroadcastScope.History,
       updatedAt: "2024-01-04T00:00:00.000Z",
-      origin: "local"
+      origin: StorageBroadcastOrigin.Local
     };
 
     scheduleBroadcast(followUp);
@@ -201,5 +203,7 @@ describe("scheduleBroadcast", () => {
     const parsed = JSON.parse(secondRaw as string);
     expect(parsed.scope).toBe(followUp.scope);
     expect(parsed.__sequence).toBe(1);
+
+    warnSpy.mockRestore();
   });
 });

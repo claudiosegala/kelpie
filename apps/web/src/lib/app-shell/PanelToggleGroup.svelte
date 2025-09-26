@@ -2,9 +2,10 @@
 
 <script lang="ts">
   import { activatePanel, shellState } from "$lib/stores/shell";
-  import { PanelId, ShellLayout, isPanelAllowedInMode } from "./contracts";
+  import { ShellLayout, isPanelAllowedInMode } from "./contracts";
+  import type { PanelId } from "./contracts";
   import DockToggleButton from "./DockToggleButton.svelte";
-  import { type DockButtonTone } from "./dockButtonClasses";
+  import type { DockButtonTone } from "./dockButtonClasses";
   import { PANEL_DEFINITIONS } from "./panels";
 
   const panelOptions = PANEL_DEFINITIONS.map((panel) => ({

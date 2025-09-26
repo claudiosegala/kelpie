@@ -42,7 +42,7 @@ export function normaliseSnapshotForPersistence(
   }
 
   if (warningThreshold > 0 && size > warningThreshold) {
-    const warningEntry = createAuditEntry("storage.quota.warning", nowFn(), {
+    const warningEntry = createAuditEntry(AuditEventType.StorageQuotaWarning, nowFn(), {
       sizeInBytes: size,
       warningBytes: warningThreshold
     });
@@ -94,7 +94,7 @@ function purgeExpiredDocuments(snapshot: StorageSnapshot, nowFn: () => IsoDateTi
 
   const prunedHistory: HistoryEntry[] = [];
   const nextHistory = snapshot.history.filter((entry) => {
-    const shouldRemove = entry.scope === "document" && purgedIds.has(entry.refId);
+    const shouldRemove = entry.scope === HistoryScope.Document && purgedIds.has(entry.refId);
     if (shouldRemove) {
       prunedHistory.push(entry);
     }
@@ -112,12 +112,12 @@ function purgeExpiredDocuments(snapshot: StorageSnapshot, nowFn: () => IsoDateTi
   }
 
   const auditEntries: AuditEntry[] = purgeCandidates.map((entry) =>
-    createAuditEntry("document.purged", now, { id: entry.id, title: entry.title })
+    createAuditEntry(AuditEventType.DocumentPurged, now, { id: entry.id, title: entry.title })
   );
 
   if (prunedHistory.length) {
     auditEntries.push(
-      createAuditEntry("history.pruned", now, {
+      createAuditEntry(AuditEventType.HistoryPruned, now, {
         reason: "documentPurged",
         count: prunedHistory.length,
         refIds: Array.from(new Set(prunedHistory.map((entry) => entry.refId)))
@@ -170,7 +170,7 @@ function trimHistoryForQuota(
 
   if (pruned.length) {
     const now = nowFn();
-    const auditEntry = createAuditEntry("history.pruned", now, {
+    const auditEntry = createAuditEntry(AuditEventType.HistoryPruned, now, {
       reason: "quota",
       count: pruned.length,
       refIds: Array.from(new Set(pruned.map((entry) => entry.refId)))
