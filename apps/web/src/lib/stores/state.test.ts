@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DocumentSnapshot, StorageSnapshot } from "./storage";
+import { DEFAULT_DOCUMENT_CONTENT, PRIMARY_DOCUMENT_ID, PRIMARY_DOCUMENT_TITLE } from "./state.constants";
 import { parseMarkdown } from "../parsing/parseTask";
 
 const BASE_TIMESTAMP = "2024-01-01T00:00:00.000Z";
@@ -47,8 +48,8 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
 
 function createDocument(overrides: Partial<DocumentSnapshot> = {}): DocumentSnapshot {
   const base: DocumentSnapshot = {
-    id: "kelpie-primary-document",
-    title: "My tasks",
+    id: PRIMARY_DOCUMENT_ID,
+    title: PRIMARY_DOCUMENT_TITLE,
     content: "- [ ] Sample",
     createdAt: BASE_TIMESTAMP,
     updatedAt: BASE_TIMESTAMP
@@ -140,13 +141,13 @@ describe("state store", () => {
     expect(updateMock).toHaveBeenCalledTimes(1);
 
     const snapshot = getSnapshot();
-    expect(snapshot.settings.lastActiveDocumentId).toBe("kelpie-primary-document");
-    expect(snapshot.documents["kelpie-primary-document"]).toBeTruthy();
+    expect(snapshot.settings.lastActiveDocumentId).toBe(PRIMARY_DOCUMENT_ID);
+    expect(snapshot.documents[PRIMARY_DOCUMENT_ID]).toBeTruthy();
     expect(snapshot.index).toHaveLength(1);
 
     const stateValue = get(appState);
-    expect(stateValue.documentId).toBe("kelpie-primary-document");
-    expect(stateValue.file).toContain("Welcome to Kelpie");
+    expect(stateValue.documentId).toBe(PRIMARY_DOCUMENT_ID);
+    expect(stateValue.file).toBe(DEFAULT_DOCUMENT_CONTENT);
   });
 
   it("updates the active document content while tracking persistence status", async () => {
