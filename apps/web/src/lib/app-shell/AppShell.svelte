@@ -94,7 +94,13 @@
         hidden={panelIsHidden(panel)}
       >
         <div class="app-shell__panel-content">
-          <slot name={panel.slot} />
+          {#if panel.slot === "editor"}
+            <slot name="editor" />
+          {:else if panel.slot === "preview"}
+            <slot name="preview" />
+          {:else if panel.slot === "settings"}
+            <slot name="settings" />
+          {/if}
         </div>
       </section>
     {/each}
