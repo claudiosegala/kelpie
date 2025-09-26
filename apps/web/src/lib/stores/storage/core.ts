@@ -17,16 +17,17 @@ import {
 } from "./history";
 import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
-import {
+import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./instrumentation";
+import { estimateSnapshotSize } from "./size";
+import { StorageBroadcastOrigin, StorageBroadcastScope } from "./types";
+import type {
   AuditEventType,
-  StorageBroadcastOrigin,
-  StorageBroadcastScope,
-  type HistoryEntry,
-  type IsoDateTimeString,
-  type RuntimeConfiguration,
-  type StorageBroadcast,
-  type StorageSnapshot,
-  type UiSettings
+  HistoryEntry,
+  IsoDateTimeString,
+  RuntimeConfiguration,
+  StorageBroadcast,
+  StorageSnapshot,
+  UiSettings
 } from "./types";
 
 export type StorageCoreState = {

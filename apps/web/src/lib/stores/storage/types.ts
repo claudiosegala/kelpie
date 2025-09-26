@@ -97,6 +97,8 @@ export const AuditEventType = {
   SettingsUpdated: "settings.updated",
   MigrationCompleted: "migration.completed",
   StorageReset: "storage.reset",
+  StorageSimulatedFirstRun: "storage.simulatedFirstRun",
+  StorageGarbageCollectionRun: "storage.gc.run",
   StorageCorruption: "storage.corruption",
   StorageQuotaWarning: "storage.quota.warning"
 } as const;
