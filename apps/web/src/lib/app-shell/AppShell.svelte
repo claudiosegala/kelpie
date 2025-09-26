@@ -50,6 +50,7 @@
   $: viewMode = $shellState.viewMode;
   $: visiblePanels = PANELS.filter((panel) => panel.isVisible(viewMode));
   $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === "settings";
+  $: activePanel = $shellState.activePanel;
 
   function mainClasses(): string {
     return settingsIsSolo ? "app-shell__main app-shell__main--centered" : "app-shell__main";
@@ -62,17 +63,35 @@
 
     return "app-shell__panel app-shell__panel--stacked";
   }
+
+  function panelIsActive(panel: PanelDefinition): boolean {
+    if (layout === "desktop") {
+      return true;
+    }
+
+    return panel.id === activePanel;
+  }
+
+  function panelIsHidden(panel: PanelDefinition): boolean {
+    if (layout === "desktop") {
+      return false;
+    }
+
+    return panel.id !== activePanel;
+  }
 </script>
 
-<div class="app-shell" data-testid="app-shell" data-layout={layout} data-mode={viewMode}>
+<div class="app-shell" data-layout={layout} data-mode={viewMode} data-testid="app-shell">
   <Toolbar {version} />
   <main class={mainClasses()} data-layout={layout}>
     {#each visiblePanels as panel (panel.id)}
       <section
         class={panelClasses(panel)}
         aria-label={panel.label}
-        data-active={panel.isVisible(viewMode)}
+        data-active={panelIsActive(panel)}
         data-panel={panel.id}
+        data-testid={`panel-${panel.id}`}
+        hidden={panelIsHidden(panel)}
       >
         <div class="app-shell__panel-content">
           <slot name={panel.slot} />

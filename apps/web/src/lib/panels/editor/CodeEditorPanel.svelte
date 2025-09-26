@@ -46,6 +46,7 @@
       aria-label="Markdown editor"
       bind:value={draft}
       class="h-full w-full flex-1 resize-none rounded-2xl border border-base-300/70 bg-base-200/80 p-5 font-mono text-sm text-base-content/80 shadow-inner outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
+      data-testid="markdown-editor"
       {placeholder}
       on:input={handleInput}
       on:focus={handleFocus}

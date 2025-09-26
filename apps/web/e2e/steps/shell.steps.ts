@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 
 const { When, Then } = createBdd();
@@ -69,8 +69,9 @@ Then("the layout should be {string}", async ({ page }, layout: string) => {
   await expect(shell).toHaveAttribute("data-layout", layout);
 });
 
-function panelLocator(page: Page, label: string) {
-  return page.getByRole("region", { name: label, exact: true });
+function panelLocator(page: Page, label: string): Locator {
+  const panelId = getTestId(panelIds, label, "panel");
+  return page.getByTestId(`panel-${panelId}`);
 }
 
 Then("the {string} panel should be visible", async ({ page }, label: string) => {
@@ -80,5 +81,12 @@ Then("the {string} panel should be visible", async ({ page }, label: string) => 
 
 Then("the {string} panel should be hidden", async ({ page }, label: string) => {
   const panel = panelLocator(page, label);
-  await expect(panel).toHaveJSProperty("hidden", true);
+  const count = await panel.count();
+
+  if (count === 0) {
+    await expect(panel).toHaveCount(0);
+    return;
+  }
+
+  await expect(panel).toBeHidden();
 });
