@@ -34,6 +34,7 @@
       aria-pressed={$shellState.viewMode === option.id}
       aria-label={option.label}
       title={option.label}
+      data-testid={`view-mode-${option.id}`}
     >
       {#if option.id === "editor-preview"}
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5">

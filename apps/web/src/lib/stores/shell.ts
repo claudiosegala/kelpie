@@ -22,7 +22,7 @@ export const shellState = readable<ShellState>(initialState, (set) => {
 });
 
 export function setLayout(layout: ShellLayout): void {
-  const normalized: ShellLayout = layout === "mobile" ? "desktop" : layout;
+  const normalized: ShellLayout = layout === "mobile" ? "mobile" : "desktop";
   shellStateStore.update((state) => {
     if (state.layout === normalized) return state;
     return { ...state, layout: normalized } satisfies ShellState;
