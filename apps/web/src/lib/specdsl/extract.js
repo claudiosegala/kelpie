@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);        // current folder path
 const SPEC_DIR = path.resolve(__dirname, "../../../../../specs");
 
 // 📍 Where we want to output the .feature files (for Playwright BDD)
-const OUT_DIR = path.resolve("../../apps/web/e2e/features");
+const OUT_DIR = path.resolve("apps/web/e2e/features");
 
 // 🏗️ Ensure output directory exists (create recursively if missing)
 fs.mkdirSync(OUT_DIR, { recursive: true });
