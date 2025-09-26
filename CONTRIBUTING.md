@@ -1,4 +1,3 @@
-
 # 📗 CONTRIBUTING.md (developer-oriented)
 
 # Contributing to Kelpie
@@ -10,13 +9,15 @@ Thanks for contributing! 🙌 This document covers everything you need to set up
 ## 🚀 Getting started
 
 ### 1. Install prerequisites
+
 - Node.js `>=20`
 - [pnpm](https://pnpm.io/) `>=9`
 
 ### 2. Install dependencies
+
 ```bash
 pnpm install
-````
+```
 
 ### 3. Run the dev server
 
@@ -37,8 +38,8 @@ pnpm test:unit
 pnpm test:unit:watch
 ```
 
-* Run automatically in **CI**
-* Run locally before pushing for faster feedback
+- Run automatically in **CI**
+- Run locally before pushing for faster feedback
 
 ### End-to-end tests (Playwright + Gherkin)
 
@@ -46,12 +47,19 @@ pnpm test:unit:watch
 # Extract .feature files from /specs/*.md
 pnpm spec:extract
 
-# Run E2E tests manually (Chromium + WebKit)
+# Watch Markdown specs and re-extract automatically
+pnpm spec:extract:watch
+
+# Run local E2E tests (Chromium by default)
 pnpm test:e2e
+
+# Run the full browser matrix (Chromium + WebKit)
+pnpm test:e2e:all
 ```
 
-* E2E tests use **fixtures** (`apps/web/src/lib/fixtures/*.md`)
-* Human-readable `.feature` files live in `/specs` (Gherkin fences)
+- E2E tests use **fixtures** (`apps/web/src/lib/fixtures/*.md`)
+- Human-readable `.feature` files live in `/specs` (Gherkin fences)
+- Set `PLAYWRIGHT_BROWSERS` to override the browser list when needed
 
 ---
 
@@ -59,9 +67,9 @@ pnpm test:e2e
 
 This project is **spec-driven**:
 
-* `/specs/*.spec.md` = human-readable feature definitions
-* Each spec may contain fenced ```gherkin blocks → extracted to `.feature` files for Playwright
-* Roadmap, release criteria, and dev workflow live under `/specs`
+- `/specs/*.spec.md` = human-readable feature definitions
+- Each spec may contain fenced ```gherkin blocks → extracted to `.feature` files for Playwright
+- Roadmap, release criteria, and dev workflow live under `/specs`
 
 Examples:
 
@@ -86,26 +94,24 @@ pnpm spec:extract
 Run manually:
 
 ```bash
-pnpm lint      # ESLint
+pnpm lint      # ESLint + Prettier cache via the web workspace
 pnpm format    # Prettier
 pnpm typecheck # Strict TypeScript
 ```
 
-No pre-commit hooks → **CI enforces** lint/typecheck on every PR & push.
+Pre-commit hooks enforce `lint-staged` automatically; CI also runs lint/typecheck on every PR & push.
 
 ---
 
 ## ⚙️ CI/CD
 
-* **CI workflow (`ci.yml`)**
+- **CI workflow (`ci.yml`)**
+  - Runs lint, typecheck, unit tests, and build
+  - Triggers on PRs + pushes to `main`
 
-  * Runs lint, typecheck, unit tests, and build
-  * Triggers on PRs + pushes to `main`
-
-* **Pages workflow (`pages-deploy.yml`)**
-
-  * Builds static SvelteKit app with `adapter-static`
-  * Deploys to GitHub Pages on push to `main`
+- **Pages workflow (`pages-deploy.yml`)**
+  - Builds static SvelteKit app with `adapter-static`
+  - Deploys to GitHub Pages on push to `main`
 
 Enable in **GitHub Settings → Pages → Build and deployment → GitHub Actions**.
 
@@ -136,7 +142,7 @@ Enable in **GitHub Settings → Pages → Build and deployment → GitHub Action
 ├─ .github/workflows/ # CI + Pages deployment
 └─ README.md
 
-````
+```
 
 ---
 
@@ -144,25 +150,25 @@ Enable in **GitHub Settings → Pages → Build and deployment → GitHub Action
 
 Dev-only, optional:
 
-* `/packages/prompt-library/` holds reusable AI prompts
-* Examples: spec validation, Gherkin generation, code refactor
-* Run manually (future script: `pnpm ai:refactor`)
+- `/packages/prompt-library/` holds reusable AI prompts
+- Examples: spec validation, Gherkin generation, code refactor
+- Run manually (future script: `pnpm ai:refactor`)
 
 ---
 
 ## 📖 Development guidelines
 
-* Programming Language: **TypeScript strict**
-* Backend Framework: *Not Applicable*
-* Frontend Framework: **SvelteKit + runes (Svelte 5)**
-* Storage: **Svelte stores** + localStorage (client-side only)
-* Lint: ESLint + Prettier, run locally or via CI
-* Tests: unit fast (auto/CI), E2E slower (manual/CI optional)
+- Programming Language: **TypeScript strict**
+- Backend Framework: _Not Applicable_
+- Frontend Framework: **SvelteKit + runes (Svelte 5)**
+- Storage: **Svelte stores** + localStorage (client-side only)
+- Lint: ESLint + Prettier, run locally or via CI
+- Tests: unit fast (auto/CI), E2E slower (manual/CI optional)
 
 ---
 
 ## 📦 Deployment
 
-* Auto-deploy to **GitHub Pages** from `main`
-* Static adapter (`@sveltejs/adapter-static`)
-* [Later] Docs bundled with site at `/docs`
+- Auto-deploy to **GitHub Pages** from `main`
+- Static adapter (`@sveltejs/adapter-static`)
+- [Later] Docs bundled with site at `/docs`
