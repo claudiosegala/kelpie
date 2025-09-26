@@ -55,7 +55,9 @@ the workspace.
   transparency and blur so content scrolls beneath it without losing contrast.
 - Left cluster renders the `ToolbarBrand` subcomponent which encapsulates all
   branding copy, tooltip composition, and typography styles. The cluster is
-  addressable via `data-testid="toolbar-brand-cluster"` for instrumentation.
+  addressable via `data-testid="toolbar-brand-cluster"` for instrumentation and
+  reuses the exported `TOOLBAR_BRAND_CLUSTER_CLASSES` token so layout assertions
+  stay aligned with implementation.
 - Right cluster (`flex-1` container) is exported as
   `TOOLBAR_CONTROLS_CLUSTER_CLASSES` and carries `data-testid="toolbar-controls-cluster"`:
   - `PanelToggleGroup` (renders only when layout is mobile via its own logic).
@@ -72,8 +74,9 @@ the workspace.
   DaisyUI `tooltip` classes and is duplicated in the `title` attribute for
   accessibility.
 - `PanelToggleGroup` subscribes to shell layout state and only renders controls
-  when mobile; toolbar always renders the component so desktop markup stays
-  consistent.
+  when mobile. The toolbar still imports the component, but the markup is
+  stripped from the DOM on desktop layouts so instrumentation accurately reflects
+  the visible surface.
 - `SaveIndicator` is always visible; it adapts width for mobile vs. desktop and
   reads from the persistence store to show status, timestamp, and tooltip.
 - `ViewModeToggleButton` updates shell view mode store; the toolbar does not
@@ -121,9 +124,14 @@ the workspace.
   adding one more component import.
 - Layout class tokens and testing IDs are centralized in
   `toolbar.constants.ts`, keeping styling, instrumentation, and tests aligned
-  without string duplication inside the Svelte markup.
+  without string duplication inside the Svelte markup. Unit tests import these
+  exported strings directly so assertions never drift from implementation
+  details.
 - `TOOLBAR_TEST_IDS` expose stable selectors so unit tests can target
-  high-level clusters without depending on specific DOM structures.
+  high-level clusters without depending on specific DOM structures. Tests also
+  rely on `ShellLayout`, `ViewMode`, and `PanelId` enums when manipulating shell
+  stores, eliminating untyped string literals that obscure intent during future
+  refactors.
 
 ## Test Scenarios (Gherkin)
 
@@ -157,11 +165,12 @@ Feature: Toolbar interactions
     Then the toolbar root uses the exported wrapper classes
     And the brand cluster test id is available for instrumentation
     And the controls cluster includes the save indicator wrapper and workspace controls
+    And each cluster reuses the exported layout class tokens
 
   Scenario: Panel toggle group only appears on mobile layouts
     When I resize the viewport to "mobile"
     Then the layout should be "mobile"
     And the panel toggle group is visible within the toolbar
     When I resize the viewport to "desktop"
-    Then the panel toggle group is hidden
+    Then the panel toggle group is hidden from the DOM
 ```
