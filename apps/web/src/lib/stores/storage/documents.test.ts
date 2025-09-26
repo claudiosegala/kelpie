@@ -233,6 +233,48 @@ describe("document mutations", () => {
     });
   });
 
+  it("trims the audit log to the configured cap when appending entries", () => {
+    const snapshot = createSnapshot({
+      config: {
+        ...BASE_CONFIG,
+        auditEntryCap: 2
+      },
+      audit: [
+        {
+          id: "audit-1",
+          type: "document.created",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          metadata: { id: "doc-0" }
+        },
+        {
+          id: "audit-2",
+          type: "document.updated",
+          createdAt: "2024-01-02T00:00:00.000Z",
+          metadata: { id: "doc-1", fields: ["title"] }
+        }
+      ]
+    });
+
+    const now = () => "2024-02-10T00:00:00.000Z";
+    const randomUUID = vi.mocked(globalThis.crypto.randomUUID);
+    randomUUID.mockReturnValue("audit-3");
+
+    const result = createDocument(snapshot, {
+      id: "doc-2",
+      title: "Doc three",
+      content: "Gamma",
+      now
+    });
+
+    expect(result.audit).toHaveLength(2);
+    expect(result.audit[0]?.id).toBe("audit-2");
+    expect(result.audit[1]).toMatchObject({
+      id: "audit-3",
+      type: "document.created",
+      metadata: { id: "doc-2", title: "Doc three" }
+    });
+  });
+
   it("validates reorder payloads", () => {
     const snapshot = createSnapshot({
       index: [

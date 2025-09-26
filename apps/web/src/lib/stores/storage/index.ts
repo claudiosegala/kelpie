@@ -4,6 +4,7 @@ export * from "./broadcast";
 export * from "./core";
 export * from "./driver";
 export * from "./engine";
+export * from "./audit";
 export * from "./history";
 export * from "./documents";
 export * from "./types";

@@ -123,6 +123,49 @@ describe("history utilities", () => {
     expect(auditEntry?.metadata).toMatchObject({ count: 1 });
   });
 
+  it("caps audit entries when recording history pruning metadata", () => {
+    const snapshot = createSnapshot({
+      config: {
+        ...BASE_CONFIG,
+        historyRetentionDays: 1,
+        auditEntryCap: 1
+      },
+      audit: [
+        {
+          id: "audit-old",
+          type: "document.created",
+          createdAt: "2024-01-01T00:00:00.000Z",
+          metadata: { id: "doc-1" }
+        }
+      ],
+      history: [
+        {
+          id: "hist-old",
+          scope: "document",
+          refId: "doc-1",
+          snapshot: { title: "Doc" },
+          createdAt: "2024-01-01T00:00:00.000Z",
+          origin: "api",
+          sequence: 1
+        }
+      ]
+    });
+
+    const { snapshot: nextSnapshot } = captureHistorySnapshot(
+      snapshot,
+      {
+        scope: "document",
+        refId: "doc-1",
+        snapshot: { title: "Doc", content: "Hello" },
+        origin: "toolbar"
+      },
+      { now: () => "2024-01-05T00:00:00.000Z" }
+    );
+
+    expect(nextSnapshot.audit).toHaveLength(1);
+    expect(nextSnapshot.audit[0]?.type).toBe("history.pruned");
+  });
+
   it("enforces the history entry cap", () => {
     const snapshot = createSnapshot({
       config: {
