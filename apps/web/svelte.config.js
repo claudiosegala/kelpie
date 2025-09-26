@@ -2,7 +2,8 @@ import adapter from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 
 const isProd = process.env.NODE_ENV === "production";
-const repo = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "";
+const [owner = "", repo = ""] = process.env.GITHUB_REPOSITORY?.split("/") ?? [];
+const isUserOrOrgPagesRepo = repo === `${owner}.github.io`;
 
 export default {
   compilerOptions: { runes: true }, // Svelte 5 runes
@@ -10,7 +11,7 @@ export default {
   kit: {
     adapter: adapter(),
     paths: {
-      base: isProd && repo ? `/${repo}` : ""
+      base: isProd && repo && !isUserOrOrgPagesRepo ? `/${repo}` : ""
     },
     prerender: { handleHttpError: "warn" },
     csrf: { trustedOrigins: [] }
