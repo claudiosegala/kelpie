@@ -50,7 +50,8 @@ the workspace.
 
 - `<header>` wrapper uses a sticky position at the top with slight background
   transparency and blur so content scrolls beneath it without losing contrast.
-- Left cluster: product name (“Kelpie”) with tooltip showing version and tagline.
+- Left cluster renders the `ToolbarBrand` subcomponent which encapsulates all
+  branding copy, tooltip composition, and typography styles.
 - Right cluster (`flex-1` container):
   - `PanelToggleGroup` (renders only when layout is mobile via its own logic).
   - `SaveIndicator` contained in a width-constrained wrapper for stability.
@@ -59,8 +60,11 @@ the workspace.
 
 ## Behavior
 
-- Branding tooltip concatenates the provided `version` prop with descriptive
-  copy; this tooltip appears on hover/focus via DaisyUI `tooltip` classes.
+- Branding tooltip is derived by `ToolbarBrand` via the shared
+  `buildBrandTooltip(version)` helper which trims input and falls back to
+  "Unknown" when the string is empty. The tooltip appears on hover/focus via
+  DaisyUI `tooltip` classes and is duplicated in the `title` attribute for
+  accessibility.
 - `PanelToggleGroup` subscribes to shell layout state and only renders controls
   when mobile; toolbar always renders the component so desktop markup stays
   consistent.
@@ -77,8 +81,8 @@ the workspace.
 
 - Header uses semantic `<header>` element and keeps interactive controls within
   accessible buttons.
-- Branding tooltip content is available via `data-tip` and native `title`,
-  ensuring screen readers announce version and description when focused.
+- `ToolbarBrand` duplicates tooltip content in both `data-tip` and `title`
+  attributes so screen readers announce version and description when focused.
 - Save indicator uses `aria-live="polite"` and `role="status"` for updates,
   enabling non-visual users to hear state changes without focus theft.
 - Toggle buttons expose `aria-label`, `aria-pressed`, and `role="group"` where
@@ -86,7 +90,8 @@ the workspace.
 
 ## Assumptions
 
-- `version` prop is always a non-empty string supplied by the shell route.
+- `version` prop is supplied by the shell route and may occasionally be empty;
+  `ToolbarBrand` guards against blanks when generating tooltip text.
 - Layout detection (desktop vs. mobile) is fully owned by shell stores and is
   trustworthy when deciding whether `PanelToggleGroup` should show.
 - Theme store only supports two themes (light/dark) today; button labels reflect
@@ -97,6 +102,17 @@ the workspace.
 - Surface contextual help and onboarding links once the information architecture is ready.
 - Provide toolbar personalization so teams can pin additional controls without code changes.
 - Localize tooltip copy and control labels once i18n infrastructure lands.
+
+## Maintainability Considerations
+
+- Shared constants keep branding strings in `toolbar.constants.ts` so copy edits
+  land in one place and Svelte components stay focused on layout concerns.
+- `ToolbarBrand` isolates tooltip formatting logic, ensuring downstream
+  refactors or localization can swap implementations without touching
+  `Toolbar.svelte`.
+- Toolbar composition favors declarative stacking of imported components instead
+  of inline helpers, so future additions (e.g., help menus) can be inserted by
+  adding one more component import.
 
 ## Test Scenarios (Gherkin)
 
