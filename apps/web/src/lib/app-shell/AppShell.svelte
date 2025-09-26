@@ -4,7 +4,7 @@
   import { onDestroy } from "svelte";
   import Toolbar from "./Toolbar.svelte";
   import { shellState, startLayoutWatcher } from "$lib/stores/shell";
-  import { PanelId, ShellLayout, isPanelAllowedInMode } from "./contracts";
+  import { PanelId, isPanelAllowedInMode } from "./contracts";
   import { getVisiblePanels, type PanelDefinition } from "./panels";
 
   export let version = "0.0.0";

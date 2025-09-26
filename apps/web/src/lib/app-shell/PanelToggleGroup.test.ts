@@ -8,8 +8,6 @@ import { PanelId } from "./contracts";
 import { PANEL_DEFINITIONS, PANEL_LABELS } from "./panels";
 import { activatePanel, setLayout, setViewMode, shellState } from "$lib/stores/shell";
 
-const PANEL_ORDER = PANEL_DEFINITIONS.map((panel) => panel.id);
-
 function panelLabel(panel: PanelId): string {
   return PANEL_LABELS[panel];
 }
@@ -40,10 +38,10 @@ describe("PanelToggleGroup", () => {
 
     const group = screen.getByRole("group", { name: "Select active panel" });
     const buttons = within(group).getAllByRole("button");
-    expect(buttons).toHaveLength(PANEL_METADATA.length);
+    expect(buttons).toHaveLength(PANEL_DEFINITIONS.length);
     const state = get(shellState);
 
-    for (const { id } of PANEL_METADATA) {
+    for (const { id } of PANEL_DEFINITIONS) {
       const button = within(group).getByRole("button", { name: panelLabel(id) });
       expect(button).toBeVisible();
       expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === id));

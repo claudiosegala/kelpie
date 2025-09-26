@@ -18,6 +18,8 @@ function createSnapshot(): StorageSnapshot {
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
+      enableAudit: true,
+      redactAuditMetadata: false,
       softDeleteRetentionDays: 7,
       quotaWarningBytes: 5_000,
       quotaHardLimitBytes: 10_000,
@@ -160,5 +162,26 @@ describe("createStorageEngine", () => {
     expect(saveSpy).toHaveBeenCalledTimes(1);
     expect(get(engine.snapshot).history).toHaveLength(1);
     expect(get(engine.snapshot).history[0]?.origin).toBe("toolbar");
+  });
+
+  it("exposes maintenance utilities for developer tooling", () => {
+    const baseline = createSnapshot();
+    loadSpy.mockReturnValue(baseline);
+
+    const engine = createStorageEngine({ driver, now: () => "2024-01-04T00:00:00.000Z" });
+
+    saveSpy.mockClear();
+
+    engine.simulateFirstRun();
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(get(engine.snapshot).config).toEqual(baseline.config);
+
+    saveSpy.mockClear();
+
+    engine.runGarbageCollection();
+
+    expect(saveSpy).toHaveBeenCalledTimes(1);
+    expect(get(engine.snapshot).meta.approxSizeBytes).toBeGreaterThan(0);
   });
 });

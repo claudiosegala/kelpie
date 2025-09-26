@@ -13,39 +13,6 @@ let pendingBroadcast: ReturnType<typeof setTimeout> | null = null;
 let queuedBroadcast: StorageBroadcast | null = null;
 let broadcastSequence = 0;
 
-type ImportMetaWithEnv = ImportMeta & {
-  env?: {
-    MODE?: string;
-    NODE_ENV?: string;
-  };
-};
-
-function getRuntimeMode(): string | undefined {
-  const metaEnv = (import.meta as ImportMetaWithEnv | undefined)?.env;
-  if (metaEnv?.MODE) {
-    return metaEnv.MODE;
-  }
-
-  if (metaEnv?.NODE_ENV) {
-    return metaEnv.NODE_ENV;
-  }
-
-  if (typeof process !== "undefined" && typeof process.env?.NODE_ENV === "string") {
-    return process.env.NODE_ENV;
-  }
-
-  return undefined;
-}
-
-function logRecoverableWarning(message: string, error: unknown): void {
-  const mode = getRuntimeMode();
-  if (mode === "production" || mode === "test") {
-    return;
-  }
-
-  console.warn(message, error);
-}
-
 function resolveBroadcastChannel(): BroadcastChannel | null {
   if (broadcastChannelBroken) {
     return null;

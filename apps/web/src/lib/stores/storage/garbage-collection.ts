@@ -1,5 +1,6 @@
 import { appendAuditEntries, createAuditEntry } from "./audit";
 import { estimateSnapshotSize } from "./size";
+import { recordQuotaWarning } from "./instrumentation";
 import type { AuditEntry, HistoryEntry, IsoDateTimeString, StorageSnapshot } from "./types";
 
 export class StorageQuotaError extends Error {
@@ -48,6 +49,7 @@ export function normaliseSnapshotForPersistence(
     const nextAudit = appendAuditEntries(working, warningEntry);
     working = { ...working, audit: nextAudit } satisfies StorageSnapshot;
     size = estimateSnapshotSize(working);
+    recordQuotaWarning({ sizeInBytes: size, warningBytes: warningThreshold });
   }
 
   const finalSnapshot: StorageSnapshot = {

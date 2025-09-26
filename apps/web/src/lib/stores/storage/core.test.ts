@@ -20,6 +20,8 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
+      enableAudit: true,
+      redactAuditMetadata: false,
       softDeleteRetentionDays: 7,
       quotaWarningBytes: 5_000,
       quotaHardLimitBytes: 10_000,
@@ -205,7 +207,8 @@ describe("createStorageCore", () => {
     expect(savedSnapshot.index).toEqual([]);
     expect(savedSnapshot.documents).toEqual({});
     expect(savedSnapshot.history).toEqual([]);
-    expect(savedSnapshot.audit).toEqual([]);
+    expect(savedSnapshot.audit).toHaveLength(1);
+    expect(savedSnapshot.audit[0]).toMatchObject({ type: "storage.reset" });
     expect(savedSnapshot.settings.lastActiveDocumentId).toBeNull();
     expect(savedSnapshot.settings.panes).toEqual({});
     expect(savedSnapshot.settings.filters).toEqual({});

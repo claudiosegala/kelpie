@@ -24,6 +24,8 @@ export type RuntimeConfiguration = {
   historyRetentionDays: number;
   historyEntryCap: number;
   auditEntryCap: number;
+  enableAudit: boolean;
+  redactAuditMetadata: boolean;
   softDeleteRetentionDays: number;
   quotaWarningBytes: number;
   quotaHardLimitBytes: number;
@@ -84,6 +86,8 @@ export type AuditEventType =
   | "settings.updated"
   | "migration.completed"
   | "storage.reset"
+  | "storage.simulatedFirstRun"
+  | "storage.gc.run"
   | "storage.corruption"
   | "storage.quota.warning";
 
