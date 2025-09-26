@@ -12,6 +12,39 @@ let pendingBroadcast: ReturnType<typeof setTimeout> | null = null;
 let queuedBroadcast: StorageBroadcast | null = null;
 let broadcastSequence = 0;
 
+type ImportMetaWithEnv = ImportMeta & {
+  env?: {
+    MODE?: string;
+    NODE_ENV?: string;
+  };
+};
+
+function getRuntimeMode(): string | undefined {
+  const metaEnv = (import.meta as ImportMetaWithEnv | undefined)?.env;
+  if (metaEnv?.MODE) {
+    return metaEnv.MODE;
+  }
+
+  if (metaEnv?.NODE_ENV) {
+    return metaEnv.NODE_ENV;
+  }
+
+  if (typeof process !== "undefined" && typeof process.env?.NODE_ENV === "string") {
+    return process.env.NODE_ENV;
+  }
+
+  return undefined;
+}
+
+function logRecoverableWarning(message: string, error: unknown): void {
+  const mode = getRuntimeMode();
+  if (mode === "production" || mode === "test") {
+    return;
+  }
+
+  console.warn(message, error);
+}
+
 function resolveBroadcastChannel(): BroadcastChannel | null {
   if (broadcastChannelBroken) {
     return null;
@@ -40,7 +73,7 @@ function resolveBroadcastChannel(): BroadcastChannel | null {
     broadcastChannel = new ChannelCtor(BROADCAST_CHANNEL_NAME);
     return broadcastChannel;
   } catch (error) {
-    console.warn("Kelpie storage: failed to initialise BroadcastChannel", error);
+    logRecoverableWarning("Kelpie storage: failed to initialise BroadcastChannel", error);
     broadcastChannelBroken = true;
     broadcastChannel = null;
     return null;
@@ -57,7 +90,7 @@ function emitViaBroadcastChannel(broadcast: StorageBroadcast): boolean {
     channel.postMessage(broadcast);
     return true;
   } catch (error) {
-    console.warn("Kelpie storage: failed to post broadcast message", error);
+    logRecoverableWarning("Kelpie storage: failed to post broadcast message", error);
     try {
       channel.close();
     } catch {
@@ -84,7 +117,7 @@ function emitViaStorageEvent(broadcast: StorageBroadcast): void {
   try {
     storage.setItem(BROADCAST_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
-    console.warn("Kelpie storage: failed to write broadcast payload", error);
+    logRecoverableWarning("Kelpie storage: failed to write broadcast payload", error);
   }
 }
 
