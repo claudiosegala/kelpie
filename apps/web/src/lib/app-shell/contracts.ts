@@ -20,9 +20,9 @@ export type ShellLayout = "desktop" | "mobile";
 export type SaveStatusKind = "idle" | "saving" | "saved" | "error";
 
 export type SaveStatus =
-    | { kind: "idle"; message: "Saved \u2713"; timestamp: number | null }
+    | { kind: "idle"; message: "Saved locally \u2713"; timestamp: number | null }
     | { kind: "saving"; message: "Saving locally\u2026"; timestamp: number }
-    | { kind: "saved"; message: "Saved \u2713"; timestamp: number }
+    | { kind: "saved"; message: "Saved locally \u2713"; timestamp: number }
     | { kind: "error"; message: string; timestamp: number };
 
 export type ShellState = {

@@ -6,14 +6,26 @@
     $: status = $saveStatus;
     $: statusLabel = status.message;
     $: timestampLabel = status.timestamp ? new Date(status.timestamp).toLocaleTimeString() : undefined;
+    const localSaveTooltip =
+        "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
+    const errorTooltip =
+        "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
+    $: tooltipMessage = status.kind === "error" ? errorTooltip : localSaveTooltip;
 </script>
 
-<div class="save-indicator" data-kind={status.kind} aria-live="polite">
+<div
+    class="save-indicator"
+    data-kind={status.kind}
+    aria-live="polite"
+    title={tooltipMessage}
+    aria-label={`${statusLabel}. ${tooltipMessage}`}
+>
     <span class="pulse" aria-hidden="true"></span>
     <span class="message">{statusLabel}</span>
     {#if timestampLabel && status.kind === "saved"}
         <span class="timestamp">({timestampLabel})</span>
     {/if}
+    <span class="tooltip-trigger" tabindex="0" role="img" aria-label={tooltipMessage} title={tooltipMessage}>ⓘ</span>
 </div>
 
 <style>
@@ -64,5 +76,22 @@
     .timestamp {
         color: #6b7280;
         font-size: 0.75rem;
+    }
+
+    .tooltip-trigger {
+        font-size: 0.85rem;
+        color: #6b7280;
+        cursor: help;
+    }
+
+    .tooltip-trigger:hover,
+    .tooltip-trigger:focus {
+        color: #2563eb;
+    }
+
+    .tooltip-trigger:focus {
+        outline: 2px solid #2563eb;
+        outline-offset: 2px;
+        border-radius: 9999px;
     }
 </style>

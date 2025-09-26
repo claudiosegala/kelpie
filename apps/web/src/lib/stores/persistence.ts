@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 import type { SaveStatus } from "$lib/app-shell/contracts";
 
-const initialStatus: SaveStatus = { kind: "idle", message: "Saved \u2713", timestamp: null };
+const initialStatus: SaveStatus = { kind: "idle", message: "Saved locally \u2713", timestamp: null };
 
 const { subscribe, set } = writable<SaveStatus>(initialStatus);
 
@@ -12,7 +12,7 @@ export function markSaving(): void {
 }
 
 export function markSaved(): void {
-    set({ kind: "saved", message: "Saved \u2713", timestamp: Date.now() });
+    set({ kind: "saved", message: "Saved locally \u2713", timestamp: Date.now() });
 }
 
 export function markError(error: unknown): void {
