@@ -1,5 +1,6 @@
 import { appendAuditEntries } from "./audit";
 import {
+  AuditEventType,
   HistoryScope,
   type AuditEntry,
   type HistoryEntry,
@@ -322,7 +323,7 @@ function createHistoryAuditEntry(
 ): AuditEntry {
   return {
     id: createId(),
-    type: "history.pruned",
+    type: AuditEventType.HistoryPruned,
     createdAt: nowFn(),
     metadata: {
       count: pruned.length,

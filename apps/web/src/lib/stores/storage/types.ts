@@ -60,16 +60,20 @@ export type DocumentSnapshot = {
   lastEditedBy?: string;
 };
 
-export enum HistoryScope {
-  Document = "document",
-  Settings = "settings"
-}
+export const HistoryScope = {
+  Document: "document",
+  Settings: "settings"
+} as const;
 
-export enum HistoryOrigin {
-  Keyboard = "keyboard",
-  Toolbar = "toolbar",
-  Api = "api"
-}
+export type HistoryScope = (typeof HistoryScope)[keyof typeof HistoryScope];
+
+export const HistoryOrigin = {
+  Keyboard: "keyboard",
+  Toolbar: "toolbar",
+  Api: "api"
+} as const;
+
+export type HistoryOrigin = (typeof HistoryOrigin)[keyof typeof HistoryOrigin];
 
 export type HistoryEntry = {
   id: string;

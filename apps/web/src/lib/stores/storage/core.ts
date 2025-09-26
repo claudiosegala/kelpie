@@ -21,6 +21,7 @@ import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./
 import { estimateSnapshotSize } from "./size";
 import { StorageBroadcastOrigin, StorageBroadcastScope } from "./types";
 import type {
+  AuditEventType,
   HistoryEntry,
   IsoDateTimeString,
   RuntimeConfiguration,
@@ -83,7 +84,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
           metadata.checksum = checksum;
         }
 
-        corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+        corruptionAudit = createAuditEntry(AuditEventType.StorageCorruption, now(), metadata);
         recordCorruption({
           reason: error.reason,
           expectedChecksum: error.expectedChecksum,

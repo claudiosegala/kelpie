@@ -1,12 +1,12 @@
 export const BRAND_NAME = "Kelpie";
 export const BRAND_TAGLINE = "Markdown to-do studio — edit, preview, and fine-tune your flow.";
 
-export const TOOLBAR_TEST_IDS = {
-  root: "toolbar",
-  brandCluster: "toolbar-brand-cluster",
-  controlsCluster: "toolbar-controls-cluster",
-  saveIndicatorWrapper: "toolbar-save-indicator-wrapper"
-} as const;
+export enum ToolbarTestId {
+  Root = "toolbar",
+  BrandCluster = "toolbar-brand-cluster",
+  ControlsCluster = "toolbar-controls-cluster",
+  SaveIndicatorWrapper = "toolbar-save-indicator-wrapper"
+}
 
 export const TOOLBAR_WRAPPER_CLASSES =
   "sticky top-0 z-30 flex w-full flex-wrap items-center justify-between gap-3 border-b border-base-300/70 bg-base-100/95 px-3 py-2 backdrop-blur";

@@ -10,22 +10,22 @@
     TOOLBAR_BRAND_CLUSTER_CLASSES,
     TOOLBAR_CONTROLS_CLUSTER_CLASSES,
     TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES,
-    TOOLBAR_TEST_IDS,
+    ToolbarTestId,
     TOOLBAR_WRAPPER_CLASSES
   } from "./toolbar.constants";
 
   export let version: string;
 </script>
 
-<header class={TOOLBAR_WRAPPER_CLASSES} data-testid={TOOLBAR_TEST_IDS.root}>
-  <div class={TOOLBAR_BRAND_CLUSTER_CLASSES} data-testid={TOOLBAR_TEST_IDS.brandCluster}>
+<header class={TOOLBAR_WRAPPER_CLASSES} data-testid={ToolbarTestId.Root}>
+  <div class={TOOLBAR_BRAND_CLUSTER_CLASSES} data-testid={ToolbarTestId.BrandCluster}>
     <ToolbarBrand {version} />
   </div>
 
-  <div class={TOOLBAR_CONTROLS_CLUSTER_CLASSES} data-testid={TOOLBAR_TEST_IDS.controlsCluster}>
+  <div class={TOOLBAR_CONTROLS_CLUSTER_CLASSES} data-testid={ToolbarTestId.ControlsCluster}>
     <PanelToggleGroup />
 
-    <div class={TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES} data-testid={TOOLBAR_TEST_IDS.saveIndicatorWrapper}>
+    <div class={TOOLBAR_SAVE_INDICATOR_WRAPPER_CLASSES} data-testid={ToolbarTestId.SaveIndicatorWrapper}>
       <SaveIndicator />
     </div>
 

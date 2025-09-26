@@ -1,18 +1,15 @@
 import { Marked } from "marked";
-import sanitizeHtml from "sanitize-html";
+import sanitizeHtml, { type Attributes, type Defaults, type IOptions, type TransformTagsMap } from "sanitize-html";
 
 const markdownParser = new Marked({
   gfm: true,
-  breaks: true,
-  headerIds: false,
-  mangle: false
+  breaks: true
 });
-
-const sanitizeDefaults = sanitizeHtml.defaults;
+const sanitizeDefaults: Defaults = sanitizeHtml.defaults;
 
 const allowedTags = Array.from(new Set([...(sanitizeDefaults.allowedTags ?? []), "img", "input"]));
 
-const allowedAttributes: sanitizeHtml.IOptions["allowedAttributes"] = {
+const allowedAttributes: IOptions["allowedAttributes"] = {
   ...sanitizeDefaults.allowedAttributes,
   a: ["href", "name", "target", "rel", "title"],
   code: ["class"],
@@ -30,38 +27,40 @@ const allowedSchemesByTag = {
 
 const baseAllowedClasses = sanitizeDefaults.allowedClasses ?? {};
 
-const allowedClasses = {
+const allowedClasses: NonNullable<IOptions["allowedClasses"]> = {
   ...baseAllowedClasses,
   code: [...(baseAllowedClasses.code ?? []), /^language-/],
   pre: [...(baseAllowedClasses.pre ?? []), /^language-/]
 };
 
-const sanitizeOptions: sanitizeHtml.IOptions = {
+const transformTags: TransformTagsMap = {
+  ...(sanitizeDefaults.transformTags ?? {}),
+  a: (tagName: string, attribs: Attributes) => ({
+    tagName,
+    attribs: {
+      ...attribs,
+      target: attribs.target ?? "_blank",
+      rel: attribs.rel ?? "noreferrer noopener"
+    }
+  }),
+  img: (tagName: string, attribs: Attributes) => ({
+    tagName,
+    attribs: {
+      ...attribs,
+      loading: attribs.loading ?? "lazy",
+      decoding: attribs.decoding ?? "async"
+    }
+  })
+};
+
+const sanitizeOptions: IOptions = {
   ...sanitizeDefaults,
   allowedTags,
   allowedAttributes,
   allowedSchemes,
   allowedSchemesByTag,
   allowedClasses,
-  transformTags: {
-    ...sanitizeDefaults.transformTags,
-    a: (tagName, attribs) => ({
-      tagName,
-      attribs: {
-        ...attribs,
-        target: attribs.target ?? "_blank",
-        rel: attribs.rel ?? "noreferrer noopener"
-      }
-    }),
-    img: (tagName, attribs) => ({
-      tagName,
-      attribs: {
-        ...attribs,
-        loading: attribs.loading ?? "lazy",
-        decoding: attribs.decoding ?? "async"
-      }
-    })
-  }
+  transformTags
 };
 
 export function renderMarkdown(markdown: string): string {
