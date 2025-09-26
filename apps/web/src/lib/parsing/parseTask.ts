@@ -4,10 +4,19 @@ export type Task = {
   checked: boolean;
   title: string;
   tags: Record<string, string | string[]>;
+  /**
+   * Original zero-based line index within the source document.
+   * Used for mapping updates back onto the correct Markdown line.
+   */
+  lineIndex: number;
 };
 
 const TAG_RE = /@(\w+)\(([^)]+)\)/g;
 const HASH_RE = /#(\w[\w-]*)/g;
+
+function resetLastIndex(re: RegExp): void {
+  re.lastIndex = 0;
+}
 
 /**
  * Parse a single Markdown line into a Task.
@@ -24,31 +33,38 @@ export function parseTaskLine(line: string, index = 0): Task | null {
 
   // @tags
   let t: RegExpExecArray | null;
+  resetLastIndex(TAG_RE);
   while ((t = TAG_RE.exec(rest)) !== null) {
     const [, key, value] = t;
     if (key && value) {
       tags[key] = value;
     }
   }
+  resetLastIndex(TAG_RE);
   rest = rest.replace(TAG_RE, "");
+  resetLastIndex(TAG_RE);
 
   // #hashtags
   const hashtags: string[] = [];
   let h: RegExpExecArray | null;
+  resetLastIndex(HASH_RE);
   while ((h = HASH_RE.exec(rest)) !== null) {
     hashtags.push(h[1]!);
   }
   if (hashtags.length > 0) {
     tags.hashtags = hashtags;
   }
+  resetLastIndex(HASH_RE);
   rest = rest.replace(HASH_RE, "");
+  resetLastIndex(HASH_RE);
 
   return {
     id: hashTask(line, index),
     raw: line,
     checked,
     title: rest.trim(),
-    tags
+    tags,
+    lineIndex: index
   };
 }
 

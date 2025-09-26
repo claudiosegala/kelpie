@@ -22,6 +22,15 @@ describe("parseTaskLine", () => {
     expect(t?.tags.estimate).toBe("2h");
   });
 
+  it("resets regex state between parses", () => {
+    const line = "- [ ] Do laundry @due(2025-05-01)";
+    const first = parseTaskLine(line);
+    const second = parseTaskLine(line);
+
+    expect(first?.tags.due).toBe("2025-05-01");
+    expect(second?.tags.due).toBe("2025-05-01");
+  });
+
   it("parses #hashtags correctly", () => {
     const t = parseTaskLine("- [ ] Jogging #health #exercise");
     expect(Array.isArray(t?.tags.hashtags)).toBe(true);
@@ -60,11 +69,20 @@ describe("parseMarkdown", () => {
     const first = parseTaskLine(line, 3);
     const second = parseTaskLine(line, 3);
     expect(first?.id).toBe(second?.id);
+    expect(first?.lineIndex).toBe(3);
+    expect(second?.lineIndex).toBe(3);
   });
 
   it("distinguishes duplicate lines by index", () => {
     const md = `- [ ] Repeat\n- [ ] Repeat`;
     const tasks = parseMarkdown(md);
     expect(tasks[0]?.id).not.toBe(tasks[1]?.id);
+  });
+
+  it("preserves the original line index even when non-task lines are present", () => {
+    const md = `# Heading\n\n- [ ] Write tests`;
+    const tasks = parseMarkdown(md);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.lineIndex).toBe(2);
   });
 });

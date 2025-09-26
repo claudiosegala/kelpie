@@ -214,15 +214,9 @@ export function toggleTask(id: string): void {
       return document; // extra guard (strict mode safe)
     }
 
-    const updated: Task = {
-      id: t.id,
-      raw: t.raw,
-      title: t.title,
-      tags: t.tags,
-      checked: !t.checked
-    };
-
-    lines[idx] = formatTask(updated);
+    const toggled = { ...t, checked: !t.checked } satisfies Task;
+    const updatedLine = formatTask(toggled);
+    lines[t.lineIndex] = updatedLine;
 
     return { ...document, content: lines.join("\n") };
   });
