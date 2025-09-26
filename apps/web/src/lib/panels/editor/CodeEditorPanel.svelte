@@ -35,54 +35,21 @@
   }
 </script>
 
-<section class="editor-panel">
-  <header>
-    <h2>✏️ Markdown Source</h2>
+<section class="flex h-full flex-col bg-base-200/40">
+  <header class="flex items-center justify-between border-b border-base-300/70 px-6 py-5">
+    <div class="tooltip tooltip-bottom" data-tip="Supports Markdown input with GitHub Flavored Markdown extensions.">
+      <h2 class="text-xs font-semibold uppercase tracking-[0.2em] text-base-content/60">Code Editor</h2>
+    </div>
   </header>
-  <textarea
-    aria-label="Markdown editor"
-    bind:value={draft}
-    {placeholder}
-    on:input={handleInput}
-    on:focus={handleFocus}
-    on:blur={handleBlur}
-  ></textarea>
+  <div class="flex flex-1 flex-col px-6 pb-6 pt-4">
+    <textarea
+      aria-label="Markdown editor"
+      bind:value={draft}
+      class="h-full w-full flex-1 resize-none rounded-2xl border border-base-300/70 bg-base-200/80 p-5 font-mono text-sm text-base-content/80 shadow-inner outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/25"
+      {placeholder}
+      on:input={handleInput}
+      on:focus={handleFocus}
+      on:blur={handleBlur}
+    ></textarea>
+  </div>
 </section>
-
-<style>
-  .editor-panel {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 1rem;
-    gap: 0.75rem;
-    background: #f9fafb;
-  }
-
-  header {
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 0.5rem;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    color: #111827;
-  }
-
-  textarea {
-    flex: 1;
-    resize: none;
-    width: 100%;
-    border: 1px solid #d1d5db;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    font-family: var(--editor-font, monospace);
-    font-size: 0.95rem;
-    line-height: 1.5;
-    background: #ffffff;
-    color: #1f2937;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
-  }
-</style>
