@@ -1,10 +1,12 @@
 import { browser } from "$app/environment";
 import { writable } from "svelte/store";
 
-export enum Theme {
-  Light = "light",
-  Dark = "dark"
-}
+export const Theme = {
+  Light: "light",
+  Dark: "dark"
+} as const;
+
+export type Theme = (typeof Theme)[keyof typeof Theme];
 
 const STORAGE_KEY = "kelpie-theme";
 
