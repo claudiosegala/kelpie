@@ -1,15 +1,10 @@
 # App Web Storage Spec
 
-```markdown
-# Storage Specification
-
 ## 1. Introduction
 This document describes the design of the local storage layer.
 The storage layer is responsible for persisting documents (Markdown “tabs”) and UI settings on the client, with support for undo/redo, multi-tab sync, and schema migration.
 
 This specification does **not** prescribe implementation details or code, but defines the expected behavior, boundaries, and responsibilities.
-
----
 
 ## 2. Outcomes
 From the perspective of the end user:
@@ -24,8 +19,6 @@ From the perspective of developers:
 - Undo/redo timelines are stored for both documents and settings (though settings undo is not exposed yet).
 - Storage behavior is inspectable and resettable in development.
 
----
-
 ## 3. Goals
 - Persist documents and settings **locally and indefinitely**.
 - Support **undo/redo** history (separate for docs and settings).
@@ -34,8 +27,6 @@ From the perspective of developers:
 - Use **schema versioning** with migrations.
 - Expose a clear **API surface** for the application and developers.
 - Be prepared for future features such as encryption, backups, and error UX.
-
----
 
 ## 4. Scope
 - In scope (MVP):
@@ -53,8 +44,6 @@ From the perspective of developers:
   - Undo/redo for settings exposed via keyboard shortcuts
   - Restore tutorial doc flow
   - Encryption or minification
-
----
 
 ## 5. Data Entities
 Storage manages several categories of data.
@@ -89,8 +78,6 @@ Storage manages several categories of data.
   - Includes timestamp, author, type, and optional metadata.
   - Retained up to a configured maximum number of entries.
 
----
-
 ## 6. Garbage Collection
 - **Soft deletes**:
   - A deleted doc is marked with a deletion timestamp and a purge date (7 days later).
@@ -105,8 +92,6 @@ Storage manages several categories of data.
   - No partial or truncated writes are allowed.
   - In such a case, an unrecoverable error is raised internally.
 
----
-
 ## 7. History & Undo/Redo
 - **Separate timelines** for documents and settings.
 - Document undo/redo is exposed (keyboard shortcuts).
@@ -114,8 +99,6 @@ Storage manages several categories of data.
 - Snapshots only (diffs may come later).
 - Undo/redo is per-scope only, not global.
 - History is automatically purged beyond retention windows or caps.
-
----
 
 ## 8. Writes & Sync
 - **Debounced writes**: changes are persisted after a short inactivity period (default 2s).
@@ -126,8 +109,6 @@ Storage manages several categories of data.
   - Last-write-wins resolution.
   - No conflict resolution beyond this in MVP.
 
----
-
 ## 9. Error Handling & UX
 - MVP: errors are not surfaced to the end user.
 - Errors are logged internally for developers.
@@ -136,16 +117,12 @@ Storage manages several categories of data.
   - Strict developer mode where all errors throw.
   - Tools to restore default tutorial doc or purge old history interactively.
 
----
-
 ## 10. Audit Trail
 - All meaningful actions are recorded: document lifecycle, settings updates, migrations, corruption events.
 - Entries include timestamp, type, author, and optional metadata.
 - End-users can access a basic activity log.
 - Developers can inspect full detail in the Inspector.
 - The audit log is capped in size.
-
----
 
 ## 11. API Structure
 The storage layer exposes a conceptual API.
@@ -185,14 +162,10 @@ This API is descriptive: exact function names and signatures are implementation 
   - Broadcast changes across tabs.
   - Receive changes and apply last-write-wins.
 
----
-
 ## 12. Developer Experience
 - Inspector panel with parsed view of storage, history, and audit.
 - Utilities for reset, purge, simulate first run.
 - Console logging: debug in development, silent in production.
-
----
 
 ## 13. Example Scenarios
 These scenarios serve both as documentation and as test case inspiration:
@@ -215,15 +188,11 @@ These scenarios serve both as documentation and as test case inspiration:
    - Attempted write fails entirely.
    - No partial or corrupted data is written.
 
----
-
 ## 14. Open Questions & Assumptions
 - Exact UX for handling storage full or corruption errors.
 - Whether to add warnings when approaching quota.
 - If settings undo/redo should eventually be merged into a global timeline.
 - Whether to implement import/export before backups, or vice versa.
-
----
 
 ## 15. AI Handoff & Test Tracking
 This section is for the AI or developers to update after implementation runs.

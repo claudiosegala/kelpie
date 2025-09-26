@@ -4,8 +4,6 @@
 
 The **Kelpie App Shell** is the container of the application. It provides the frame in which all panels live, coordinates their communication, and ensures offline-first behavior. It includes the toolbar, manages save state, applies themes, and handles errors. It is the “shell” that houses the **Code Editor Panel**, the **Interactive Preview Panel**, and the **App Settings Panel**.
 
----
-
 ## Outcomes
 
 * **For users**:
@@ -22,8 +20,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
   * Theming via TailwindCSS + DaisyUI with room for dynamic customization.
   * A structure that supports testing with Vitest + Playwright.
 
----
-
 ## Goals
 
 * Guarantee that the app shell coordinates editor, preview, and settings without leaking responsibilities.
@@ -31,8 +27,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
 * Provide a consistent offline experience (PWA).
 * Provide error bubbling that surfaces failures clearly but non-destructively.
 * Allow live theme customization without disrupting editing.
-
----
 
 ## Scope
 
@@ -53,8 +47,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
 * Settings search/filter.
 * Undo/redo for settings.
 
----
-
 ## Data Entities
 
 * **Editor Content**: the text input, tied to a tab identifier.
@@ -63,8 +55,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
 * **Shortcut Mappings**: current keybindings for undo/redo and other commands.
 * **Interaction Events**: user actions from the preview (e.g., marking a task done).
 * **Errors**: bubbled exceptions from panels.
-
----
 
 ## Behavior
 
@@ -96,8 +86,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
   * All exceptions bubble up to Shell.
   * Shell shows non-blocking toast notifications.
 
----
-
 ## API Structure (as Responsibilities)
 
 * **Code Editor Panel**:
@@ -125,8 +113,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
   * Must propagate theme changes.
   * Must handle errors consistently.
 
----
-
 ## Developer Experience
 
 * **Tooling**:
@@ -143,8 +129,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
   * Ability to export unsaved data.
 
 * **Monorepo structure**: each major panel lives in its own package; app shell orchestrates.
-
----
 
 ## Example Scenarios
 
@@ -168,8 +152,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
 
    * User changes color in settings → Shell applies DaisyUI theme live → Editor + Preview update instantly.
 
----
-
 ## Open Questions & Assumptions
 
 * Should save indicator also include **last saved timestamp**?
@@ -177,8 +159,6 @@ The **Kelpie App Shell** is the container of the application. It provides the fr
 * Should Shell automatically retry failed saves, or only notify users?
 
 Assumption: For MVP, **retry is not implemented**; interactions in preview do not feed back into editor text.
-
----
 
 ## 15. AI Handoff & Test Tracking
 This section is for the AI or developers to update after implementation runs.
