@@ -4,9 +4,11 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import PanelToggleGroup from "./PanelToggleGroup.svelte";
-import { PANEL_ORDER, PanelId, ShellLayout, ViewMode } from "./contracts";
-import { PANEL_LABELS } from "./panels";
+import { ShellLayout, PanelId, ViewMode } from "./contracts";
+import { PANEL_DEFINITIONS, PANEL_LABELS } from "./panels";
 import { activatePanel, setLayout, setViewMode, shellState } from "$lib/stores/shell";
+
+const PANEL_ORDER = PANEL_DEFINITIONS.map((panel) => panel.id);
 
 function panelLabel(panel: PanelId): string {
   return PANEL_LABELS[panel];
@@ -38,13 +40,13 @@ describe("PanelToggleGroup", () => {
 
     const group = screen.getByRole("group", { name: "Select active panel" });
     const buttons = within(group).getAllByRole("button");
-    expect(buttons).toHaveLength(PANEL_ORDER.length);
+    expect(buttons).toHaveLength(PANEL_METADATA.length);
     const state = get(shellState);
 
-    for (const panel of PANEL_ORDER) {
-      const button = within(group).getByRole("button", { name: panelLabel(panel) });
+    for (const { id } of PANEL_METADATA) {
+      const button = within(group).getByRole("button", { name: panelLabel(id) });
       expect(button).toBeVisible();
-      expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === panel));
+      expect(button).toHaveAttribute("aria-pressed", String(state.activePanel === id));
     }
   });
 

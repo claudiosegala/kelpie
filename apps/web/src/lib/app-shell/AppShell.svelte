@@ -19,44 +19,54 @@
     stopLayoutWatcher?.();
   });
 
+  const MAIN_CLASS = "app-shell__main";
+  const MAIN_CENTERED_CLASS = "app-shell__main app-shell__main--centered";
+  const PANEL_STACKED_CLASS = "app-shell__panel app-shell__panel--stacked";
+  const PANEL_FULL_CLASS = "app-shell__panel app-shell__panel--full";
+
+  type PanelPresentation = PanelDefinition & {
+    className: string;
+    isAllowedInMode: boolean;
+    isActive: boolean;
+    isHidden: boolean;
+  };
+
   $: layout = $shellState.layout;
   $: viewMode = $shellState.viewMode;
   $: visiblePanels = getVisiblePanels(viewMode);
   $: settingsIsSolo = visiblePanels.length === 1 && visiblePanels[0]?.id === PanelId.Settings;
   $: activePanel = $shellState.activePanel;
+  $: isDesktopLayout = layout === "desktop";
+  $: mainClassName = settingsIsSolo ? MAIN_CENTERED_CLASS : MAIN_CLASS;
+  $: panelPresentations = visiblePanels.map((panel): PanelPresentation => {
+    const isSettingsPanel = panel.id === "settings";
+    const className = isSettingsPanel && settingsIsSolo ? PANEL_FULL_CLASS : PANEL_STACKED_CLASS;
+    const isAllowedInMode = isPanelAllowedInMode(panel.id, viewMode);
+    const isActive = isDesktopLayout || panel.id === activePanel;
+    const isHidden = !isDesktopLayout && panel.id !== activePanel;
 
-  function mainClasses(): string {
-    return settingsIsSolo ? "app-shell__main app-shell__main--centered" : "app-shell__main";
-  }
-
-  function panelClasses(panel: PanelDefinition): string {
-    if (panel.id === PanelId.Settings) {
-      return settingsIsSolo ? "app-shell__panel app-shell__panel--full" : "app-shell__panel app-shell__panel--stacked";
-    }
-
-    return "app-shell__panel app-shell__panel--stacked";
-  }
-
-  function panelIsHidden(panel: PanelDefinition): boolean {
-    if (layout === ShellLayout.Desktop) {
-      return false;
-    }
-
-    return panel.id !== activePanel;
-  }
+    return {
+      ...panel,
+      className,
+      isAllowedInMode,
+      isActive,
+      isHidden
+    };
+  });
 </script>
 
 <div class="app-shell" data-layout={layout} data-mode={viewMode} data-testid="app-shell">
   <Toolbar {version} />
-  <main class={mainClasses()} data-layout={layout}>
-    {#each visiblePanels as panel (panel.id)}
+  <main class={mainClassName} data-layout={layout}>
+    {#each panelPresentations as panel (panel.id)}
       <section
-        class={panelClasses(panel)}
+        class={panel.className}
         aria-label={panel.label}
-        data-active={isPanelAllowedInMode(panel.id, viewMode)}
+        data-active={panel.isActive}
+        data-allowed={panel.isAllowedInMode}
         data-panel={panel.id}
         data-testid={`panel-${panel.id}`}
-        hidden={panelIsHidden(panel)}
+        hidden={panel.isHidden}
       >
         <div class="app-shell__panel-content">
           {#if panel.slot === PanelId.Editor}
@@ -65,6 +75,8 @@
             <slot name="preview" />
           {:else if panel.slot === PanelId.Settings}
             <slot name="settings" />
+          {:else}
+            <slot />
           {/if}
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { STORAGE_SCHEMA_VERSION } from "./constants";
 import { createDefaultConfiguration, createInitialSnapshot } from "./defaults";
+import { appendAuditEntries, createAuditEntry } from "./audit";
 import type { StorageDriver } from "./driver";
 import {
   captureHistorySnapshot,
@@ -60,13 +61,42 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
   const now = options.now ?? (() => new Date().toISOString());
   const broadcast = options.broadcast ?? (() => {});
 
-  const loadedSnapshot = driver.load() ?? createInitialSnapshot();
+  let corruptionAudit: ReturnType<typeof createAuditEntry> | null = null;
+  const loadedSnapshot =
+    driver.load({
+      onCorruption(error) {
+        const metadata: Record<string, unknown> = {
+          reason: error.reason
+        };
+
+        if (error.expectedChecksum || error.actualChecksum) {
+          const checksum: Record<string, string> = {};
+          if (error.expectedChecksum) {
+            checksum.expected = error.expectedChecksum;
+          }
+          if (error.actualChecksum) {
+            checksum.actual = error.actualChecksum;
+          }
+          metadata.checksum = checksum;
+        }
+
+        corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+      }
+    }) ?? createInitialSnapshot();
+
   const migrationResult = runMigrations(loadedSnapshot, STORAGE_SCHEMA_VERSION, { now });
 
   let initialSnapshot = migrationResult.snapshot;
 
-  if (migrationResult.applied.length) {
-    const prepared = normaliseSnapshotForPersistence(migrationResult.snapshot, { now });
+  if (corruptionAudit) {
+    const nextAudit = appendAuditEntries(initialSnapshot, corruptionAudit);
+    initialSnapshot = { ...initialSnapshot, audit: nextAudit } satisfies StorageSnapshot;
+  }
+
+  const shouldPersist = migrationResult.applied.length > 0 || Boolean(corruptionAudit);
+
+  if (shouldPersist) {
+    const prepared = normaliseSnapshotForPersistence(initialSnapshot, { now });
     driver.save(prepared.snapshot);
     initialSnapshot = prepared.snapshot;
   }

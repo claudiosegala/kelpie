@@ -4,50 +4,18 @@
   import SaveIndicatorIcon from "./SaveIndicatorIcon.svelte";
   import { saveStatus } from "$lib/stores/persistence";
   import { SaveStatusKind } from "$lib/app-shell/contracts";
-  import type { SaveStatus } from "$lib/app-shell/contracts";
+  import { LOCAL_SAVE_TOOLTIP, toneFor, tooltipFor, getTimestampDetails } from "./save-indicator.config";
 
-  const localSaveTooltip =
-    "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
-  const errorTooltip =
-    "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
-
-  type ToneClasses = { badge: string; icon: string };
-
-  const toneByKind: Record<SaveStatus["kind"], ToneClasses> = {
-    [SaveStatusKind.Idle]: {
-      badge: "border-success/40 bg-success/10 text-success",
-      icon: "text-success"
-    },
-    [SaveStatusKind.Saving]: {
-      badge: "border-info/40 bg-info/10 text-info",
-      icon: "text-info"
-    },
-    [SaveStatusKind.Saved]: {
-      badge: "border-success/40 bg-success/10 text-success",
-      icon: "text-success"
-    },
-    [SaveStatusKind.Error]: {
-      badge: "border-error/40 bg-error/10 text-error",
-      icon: "text-error"
-    }
-  };
-
-  const tooltipByKind: Record<SaveStatus["kind"], string> = {
-    [SaveStatusKind.Idle]: localSaveTooltip,
-    [SaveStatusKind.Saving]: localSaveTooltip,
-    [SaveStatusKind.Saved]: localSaveTooltip,
-    [SaveStatusKind.Error]: errorTooltip
-  };
+  const BASE_BADGE_CLASSES = "indicator";
 
   $: status = $saveStatus;
   $: statusLabel = status.message;
-  $: tone = toneByKind[status.kind] ?? toneByKind[SaveStatusKind.Saved];
-  $: lastSavedAt = status.timestamp && status.kind === SaveStatusKind.Saved ? new Date(status.timestamp) : undefined;
-  $: formattedTimestamp = lastSavedAt?.toLocaleTimeString();
-  $: tooltipBase = tooltipByKind[status.kind] ?? localSaveTooltip;
-  $: tooltipMessage = formattedTimestamp ? `${tooltipBase}\nLast saved at ${formattedTimestamp}.` : tooltipBase;
+  $: tone = toneFor(status.kind);
+  $: timestampDetails = getTimestampDetails(status);
+  $: tooltipBase = tooltipFor(status.kind) ?? LOCAL_SAVE_TOOLTIP;
+  $: tooltipMessage = timestampDetails ? `${tooltipBase}\n${timestampDetails.tooltipLine}` : tooltipBase;
   $: badgeClasses = [
-    "indicator",
+    BASE_BADGE_CLASSES,
     tone.badge,
     status.kind === SaveStatusKind.Saving ? "indicator--saving animate-pulse" : ""
   ]
@@ -69,9 +37,9 @@
   >
     <SaveIndicatorIcon kind={status.kind} toneClass={tone.icon} />
     <span class="indicator__label" data-testid="save-indicator-label">{statusLabel}</span>
-    {#if formattedTimestamp}
+    {#if timestampDetails}
       <span class="indicator__timestamp" data-testid="save-indicator-timestamp">
-        ({formattedTimestamp})
+        {timestampDetails.display}
       </span>
     {/if}
   </span>

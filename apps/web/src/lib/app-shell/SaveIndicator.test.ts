@@ -4,10 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import SaveIndicator from "./SaveIndicator.svelte";
 import { SaveStatusKind } from "$lib/app-shell/contracts";
 import { markError, markSaved, markSaving, resetSaveStatus } from "$lib/stores/persistence";
-
-const localTooltip =
-  "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
-const errorTooltip = "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
+import { ERROR_TOOLTIP, LOCAL_SAVE_TOOLTIP } from "./save-indicator.config";
 
 describe("SaveIndicator", () => {
   afterEach(() => {
@@ -21,7 +18,7 @@ describe("SaveIndicator", () => {
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Saved locally/);
     expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Idle);
-    expect(indicator).toHaveAttribute("title", localTooltip);
+    expect(indicator).toHaveAttribute("title", LOCAL_SAVE_TOOLTIP);
     expect(within(indicator).getByText("Saved locally ✓")).toBeVisible();
     expect(
       screen.queryByText((content) => content.startsWith("(") && content.includes(":") && content.endsWith(")"))
@@ -37,7 +34,7 @@ describe("SaveIndicator", () => {
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Saving locally/);
     expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Saving);
-    expect(indicator).toHaveAttribute("title", localTooltip);
+    expect(indicator).toHaveAttribute("title", LOCAL_SAVE_TOOLTIP);
     const label = within(indicator).getByText("Saving locally…");
     expect(label).toBeVisible();
     expect(indicator.className).toContain("animate-pulse");
@@ -68,7 +65,7 @@ describe("SaveIndicator", () => {
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Disk full/);
     expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Error);
-    expect(indicator).toHaveAttribute("title", errorTooltip);
+    expect(indicator).toHaveAttribute("title", ERROR_TOOLTIP);
     expect(within(indicator).getByText("Disk full")).toBeVisible();
   });
 });

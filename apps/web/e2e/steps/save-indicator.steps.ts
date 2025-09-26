@@ -14,9 +14,24 @@ const SAVE_INDICATOR_TEST_ID = "save-indicator";
 const SAVE_INDICATOR_TOOLTIP_TEST_ID = "save-indicator-tooltip";
 const SAVE_INDICATOR_LABEL_TEST_ID = "save-indicator-label";
 const SAVE_INDICATOR_TIMESTAMP_TEST_ID = "save-indicator-timestamp";
+const LOCAL_SAVE_TOOLTIP_MESSAGE =
+  "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
+const ERROR_TOOLTIP_MESSAGE =
+  "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
 
 let currentSaveStatusKind: SaveStatusKind = SaveStatusKind.Idle;
 let lastTimestampIso: string | null = null;
+
+function parseSaveStatusKind(kind: string): SaveStatusKind {
+  const normalized = kind.trim().toLowerCase();
+  const values = Object.values(SaveStatusKind) as string[];
+
+  if (!values.includes(normalized)) {
+    throw new Error(`Unknown save status kind: ${kind}`);
+  }
+
+  return normalized as SaveStatusKind;
+}
 
 function indicatorLocator(page: Page) {
   return page.getByTestId(SAVE_INDICATOR_TEST_ID);
@@ -52,6 +67,14 @@ function indicatorTimestampLocator(page: Page) {
   return indicatorLocator(page).getByTestId(SAVE_INDICATOR_TIMESTAMP_TEST_ID);
 }
 
+async function expectTooltipMessage(page: Page, message: string): Promise<void> {
+  const tooltip = tooltipLocator(page);
+  await expect(tooltip).toHaveAttribute("data-tip", message);
+
+  const indicator = indicatorLocator(page);
+  await expect(indicator).toHaveAttribute("title", message);
+}
+
 async function loadAppShell(page: Page): Promise<void> {
   await page.goto("/");
   await page.evaluate(() => localStorage.clear());
@@ -64,6 +87,17 @@ async function loadAppShell(page: Page): Promise<void> {
 
 async function setSaveStatus(page: Page, update: SaveStatusUpdate): Promise<void> {
   currentSaveStatusKind = update.kind;
+  const timestamp = update.timestamp ?? null;
+  if (timestamp === null || typeof timestamp === "undefined") {
+    lastTimestampIso = null;
+  } else if (typeof timestamp === "number" && Number.isFinite(timestamp)) {
+    lastTimestampIso = new Date(timestamp).toISOString();
+  } else if (typeof timestamp === "string") {
+    const parsed = Date.parse(timestamp);
+    lastTimestampIso = Number.isNaN(parsed) ? null : new Date(parsed).toISOString();
+  } else {
+    lastTimestampIso = null;
+  }
   await page.evaluate(
     ([kind, message, timestamp, enums]) => {
       const setter = (globalThis as { __kelpieSetSaveStatus?: (status: unknown) => void }).__kelpieSetSaveStatus;
@@ -111,12 +145,83 @@ async function setSaveStatus(page: Page, update: SaveStatusUpdate): Promise<void
   );
 }
 
+Given("the user has the app shell open", async ({ page }) => {
+  await loadAppShell(page);
+});
+
+When("the save status store reports {string}", async ({ page }, kind: string) => {
+  await setSaveStatus(page, { kind: parseSaveStatusKind(kind) });
+});
+
+Given("the save status store reports {string}", async ({ page }, kind: string) => {
+  await setSaveStatus(page, { kind: parseSaveStatusKind(kind) });
+});
+
+Given("the save status store reports {string} with a recent timestamp", async ({ page }, kind: string) => {
+  const isoTimestamp = new Date().toISOString();
+  await setSaveStatus(page, { kind: parseSaveStatusKind(kind), timestamp: isoTimestamp });
+});
+
+Then("the badge tone is styled for success", async ({ page }) => {
+  const indicator = indicatorLocator(page);
+  await expect(indicator).toHaveAttribute("data-kind", currentSaveStatusKind);
+  await expectClasses(indicator, ["indicator", "border-success/40", "bg-success/10", "text-success"]);
+});
+
+Then("the tooltip explains that changes are stored locally for now", async ({ page }) => {
+  await expectTooltipMessage(page, LOCAL_SAVE_TOOLTIP_MESSAGE);
+});
+
+Then("the badge pulses to indicate activity", async ({ page }) => {
+  const indicator = indicatorLocator(page);
+  await expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Saving);
+  await expectClasses(indicator, [
+    "indicator",
+    "border-info/40",
+    "bg-info/10",
+    "text-info",
+    "indicator--saving",
+    "animate-pulse"
+  ]);
+});
+
+Then("the tooltip still describes local storage", async ({ page }) => {
+  await expectTooltipMessage(page, LOCAL_SAVE_TOOLTIP_MESSAGE);
+});
+
+Then("the timestamp is displayed in parentheses with the local time", async ({ page }) => {
+  const iso = lastTimestampIso;
+  expect(iso).not.toBeNull();
+
+  const expectedTime = await page.evaluate((timestamp) => new Date(timestamp).toLocaleTimeString(), iso);
+  await expect(indicatorTimestampLocator(page)).toHaveText(`(${expectedTime})`);
+});
+
+Then("the tooltip includes the last saved time on a new line", async ({ page }) => {
+  const iso = lastTimestampIso;
+  expect(iso).not.toBeNull();
+
+  const formattedTime = await page.evaluate((timestamp) => new Date(timestamp).toLocaleTimeString(), iso);
+  const expectedMessage = `${LOCAL_SAVE_TOOLTIP_MESSAGE}\nLast saved at ${formattedTime}.`;
+  await expectTooltipMessage(page, expectedMessage);
+});
+
+Then("the badge tone switches to error styling", async ({ page }) => {
+  const indicator = indicatorLocator(page);
+  await expect(indicator).toHaveAttribute("data-kind", SaveStatusKind.Error);
+  await expectClasses(indicator, ["indicator", "border-error/40", "bg-error/10", "text-error"]);
+});
+
+Then("the tooltip advises retrying or exporting data", async ({ page }) => {
+  await expectTooltipMessage(page, ERROR_TOOLTIP_MESSAGE);
+});
+
 Given("the app shell begins an offline save", async ({ page }) => {
   await loadAppShell(page);
 });
 
 When("the save status is updated to {string}", async ({ page }, kind: string) => {
-  await setSaveStatus(page, { kind: kind as SaveStatusKind });
+  await setSaveStatus(page, { kind: parseSaveStatusKind(kind) });
 });
 
 Then("the indicator shows {string} with a pulsing badge", async ({ page }, label: string) => {
@@ -141,8 +246,7 @@ Given(
   "the save status is updated to {string} with timestamp {string}",
   async ({ page }, kind: string, isoTimestamp: string) => {
     await loadAppShell(page);
-    lastTimestampIso = isoTimestamp;
-    await setSaveStatus(page, { kind: kind as SaveStatusKind, timestamp: isoTimestamp });
+    await setSaveStatus(page, { kind: parseSaveStatusKind(kind), timestamp: isoTimestamp });
   }
 );
 
@@ -165,16 +269,10 @@ Given(
   "the save status is updated to {string} with message {string}",
   async ({ page }, kind: string, message: string) => {
     await loadAppShell(page);
-    await setSaveStatus(page, { kind: kind as SaveStatusKind, message });
+    await setSaveStatus(page, { kind: parseSaveStatusKind(kind), message });
   }
 );
 
 Then("the tooltip explains how to retry or export the data", async ({ page }) => {
-  const tooltipMessage =
-    "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
-  const tooltip = tooltipLocator(page);
-  await expect(tooltip).toHaveAttribute("data-tip", tooltipMessage);
-
-  const indicator = indicatorLocator(page);
-  await expect(indicator).toHaveAttribute("title", tooltipMessage);
+  await expectTooltipMessage(page, ERROR_TOOLTIP_MESSAGE);
 });
