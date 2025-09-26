@@ -19,6 +19,8 @@ const SAMPLE_SNAPSHOT: StorageSnapshot = {
     historyRetentionDays: 14,
     historyEntryCap: 50,
     auditEntryCap: 25,
+    enableAudit: true,
+    redactAuditMetadata: false,
     softDeleteRetentionDays: 7,
     quotaWarningBytes: 5_000,
     quotaHardLimitBytes: 10_000,
@@ -204,5 +206,21 @@ describe("createLocalStorageDriver", () => {
     expect(thrown).toBeInstanceOf(StorageDriverQuotaError);
 
     getLocalStorageSpy.mockRestore();
+  });
+
+  it("supports optional encryption hooks", () => {
+    const encrypt = vi.fn((payload: string) => `enc:${payload}`);
+    const decrypt = vi.fn((payload: string) => payload.replace(/^enc:/, ""));
+
+    const driver = createLocalStorageDriver(STORAGE_KEY, { encrypt, decrypt });
+    driver.save(SAMPLE_SNAPSHOT);
+
+    const stored = globalThis.localStorage.getItem(STORAGE_KEY);
+    expect(stored).toMatch(/^enc:/);
+    expect(encrypt).toHaveBeenCalledTimes(1);
+
+    const loaded = driver.load();
+    expect(decrypt).toHaveBeenCalledTimes(1);
+    expect(loaded).toEqual(SAMPLE_SNAPSHOT);
   });
 });

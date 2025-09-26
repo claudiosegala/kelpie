@@ -157,6 +157,16 @@ Given("the save status store reports {string}", async ({ page }, kind: string) =
   await setSaveStatus(page, { kind: parseSaveStatusKind(kind) });
 });
 
+Given(
+  "the save status store reports {string} with message {string}",
+  async ({ page }, kind: string, message: string) => {
+    await setSaveStatus(page, {
+      kind: parseSaveStatusKind(kind),
+      message
+    });
+  }
+);
+
 Given("the save status store reports {string} with a recent timestamp", async ({ page }, kind: string) => {
   const isoTimestamp = new Date().toISOString();
   await setSaveStatus(page, { kind: parseSaveStatusKind(kind), timestamp: isoTimestamp });

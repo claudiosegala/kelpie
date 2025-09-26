@@ -17,6 +17,8 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
+      enableAudit: true,
+      redactAuditMetadata: false,
       softDeleteRetentionDays: 7,
       quotaWarningBytes: 1_000,
       quotaHardLimitBytes: 5_000,

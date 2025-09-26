@@ -24,6 +24,8 @@ export type RuntimeConfiguration = {
   historyRetentionDays: number;
   historyEntryCap: number;
   auditEntryCap: number;
+  enableAudit: boolean;
+  redactAuditMetadata: boolean;
   softDeleteRetentionDays: number;
   quotaWarningBytes: number;
   quotaHardLimitBytes: number;
@@ -58,16 +60,20 @@ export type DocumentSnapshot = {
   lastEditedBy?: string;
 };
 
-export enum HistoryScope {
-  Document = "document",
-  Settings = "settings"
-}
+export const HistoryScope = {
+  Document: "document",
+  Settings: "settings"
+} as const;
 
-export enum HistoryOrigin {
-  Keyboard = "keyboard",
-  Toolbar = "toolbar",
-  Api = "api"
-}
+export type HistoryScope = (typeof HistoryScope)[keyof typeof HistoryScope];
+
+export const HistoryOrigin = {
+  Keyboard: "keyboard",
+  Toolbar: "toolbar",
+  Api: "api"
+} as const;
+
+export type HistoryOrigin = (typeof HistoryOrigin)[keyof typeof HistoryOrigin];
 
 export type HistoryEntry = {
   id: string;
@@ -80,20 +86,22 @@ export type HistoryEntry = {
   sequence: number;
 };
 
-export enum AuditEventType {
-  DocumentCreated = "document.created",
-  DocumentUpdated = "document.updated",
-  DocumentDeleted = "document.deleted",
-  DocumentRestored = "document.restored",
-  DocumentReordered = "document.reordered",
-  DocumentPurged = "document.purged",
-  HistoryPruned = "history.pruned",
-  SettingsUpdated = "settings.updated",
-  MigrationCompleted = "migration.completed",
-  StorageReset = "storage.reset",
-  StorageCorruption = "storage.corruption",
-  StorageQuotaWarning = "storage.quota.warning"
-}
+export const AuditEventType = {
+  DocumentCreated: "document.created",
+  DocumentUpdated: "document.updated",
+  DocumentDeleted: "document.deleted",
+  DocumentRestored: "document.restored",
+  DocumentReordered: "document.reordered",
+  DocumentPurged: "document.purged",
+  HistoryPruned: "history.pruned",
+  SettingsUpdated: "settings.updated",
+  MigrationCompleted: "migration.completed",
+  StorageReset: "storage.reset",
+  StorageCorruption: "storage.corruption",
+  StorageQuotaWarning: "storage.quota.warning"
+} as const;
+
+export type AuditEventType = (typeof AuditEventType)[keyof typeof AuditEventType];
 
 export type AuditEntry = {
   id: string;
@@ -122,19 +130,23 @@ export type StorageMutationResult = {
 /**
  * Event payload describing a change broadcast across tabs.
  */
-export enum StorageBroadcastScope {
-  Snapshot = "snapshot",
-  Documents = "documents",
-  Settings = "settings",
-  Config = "config",
-  History = "history",
-  Audit = "audit"
-}
+export const StorageBroadcastScope = {
+  Snapshot: "snapshot",
+  Documents: "documents",
+  Settings: "settings",
+  Config: "config",
+  History: "history",
+  Audit: "audit"
+} as const;
 
-export enum StorageBroadcastOrigin {
-  Local = "local",
-  External = "external"
-}
+export type StorageBroadcastScope = (typeof StorageBroadcastScope)[keyof typeof StorageBroadcastScope];
+
+export const StorageBroadcastOrigin = {
+  Local: "local",
+  External: "external"
+} as const;
+
+export type StorageBroadcastOrigin = (typeof StorageBroadcastOrigin)[keyof typeof StorageBroadcastOrigin];
 
 export type StorageBroadcast = {
   scope: StorageBroadcastScope;
