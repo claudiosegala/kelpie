@@ -4,9 +4,11 @@
  * Centralising these checks makes it easier to stub globals in tests
  * and swap implementations when new platforms are supported.
  */
+import { storageWarn } from "./logging";
+
 export function getWindow(): (Window & typeof globalThis) | null {
   if (typeof window === "undefined") {
-    console.warn("Kelpie storage: window is not available");
+    storageWarn("window is not available");
     return null;
   }
 
@@ -15,7 +17,7 @@ export function getWindow(): (Window & typeof globalThis) | null {
 
 export function getLocalStorage(): Storage | null {
   if (typeof localStorage === "undefined") {
-    console.warn("Kelpie storage: localStorage is not available");
+    storageWarn("localStorage is not available");
     return null;
   }
 
