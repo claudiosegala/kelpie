@@ -1,3 +1,5 @@
+import { mdsvex } from "mdsvex";
+
 export type Task = {
   id: string;
   raw: string;
@@ -11,11 +13,106 @@ export type Task = {
   lineIndex: number;
 };
 
-const TAG_RE = /@(\w+)\(([^)]+)\)/g;
-const HASH_RE = /#(\w[\w-]*)/g;
+const TAG_PATTERN = /@(\w+)\(([^)]+)\)/g;
+const HASH_PATTERN = /#(\w[\w-]*)/g;
 
-function resetLastIndex(re: RegExp): void {
-  re.lastIndex = 0;
+type MdastPosition = { start: { line: number } };
+type MdastNode = {
+  type: string;
+  children?: MdastNode[];
+  value?: string;
+  checked?: boolean | null;
+  position?: MdastPosition | null;
+};
+type MdastRoot = MdastNode & { children: MdastNode[] };
+
+let processor: { parse: (markdown: string) => MdastRoot } | null = null;
+
+const processorReady = initializeProcessor();
+await processorReady;
+
+async function initializeProcessor(): Promise<void> {
+  if (processor) return;
+
+  let captured: { parse: (markdown: string) => MdastRoot } | null = null;
+  const capturePlugin = function (this: { parse: (markdown: string) => MdastRoot }) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    captured = this;
+  };
+
+  const preprocessor = mdsvex({
+    highlight: false,
+    smartypants: false,
+    remarkPlugins: [capturePlugin],
+    rehypePlugins: []
+  });
+
+  await preprocessor.markup({ content: "", filename: "kelpie-init.svx" });
+
+  if (!captured) {
+    throw new Error("Failed to initialize Markdown parser");
+  }
+
+  processor = captured;
+}
+
+type ExtractedTask = Omit<Task, "id">;
+
+function buildTasksFromTree(tree: MdastRoot, lines: string[]): ExtractedTask[] {
+  const tasks: ExtractedTask[] = [];
+
+  visitListItems(tree, (node) => {
+    const position = node.position ?? null;
+    const zeroBasedIndex = position ? Math.max(0, position.start.line - 1) : 0;
+    const lineIndex = Math.min(zeroBasedIndex, Math.max(0, lines.length - 1));
+    const raw = lines[lineIndex] ?? "";
+
+    const lineMatch = raw.match(/^\s*(?:[-*+]\s*|\d+\.\s*)\[(\s*[xX]?\s*)\]\s*(.*)$/);
+    if (!lineMatch) {
+      return;
+    }
+
+    const marker = lineMatch[1] ?? "";
+    const remainder = lineMatch[2] ?? "";
+    const checked = marker.trim().toLowerCase() === "x";
+    const { title, tags } = extractTitleAndTags(remainder);
+
+    tasks.push({
+      raw,
+      checked,
+      title,
+      tags,
+      lineIndex
+    });
+  });
+
+  return tasks;
+}
+
+function extractTitleAndTags(input: string): { title: string; tags: Record<string, string | string[]> } {
+  const tags: Record<string, string | string[]> = {};
+
+  const tagMatches = Array.from(input.matchAll(new RegExp(TAG_PATTERN.source, TAG_PATTERN.flags)));
+  for (const match of tagMatches) {
+    const [, key, value] = match;
+    if (key && value) {
+      tags[key] = value;
+    }
+  }
+
+  const withoutTags = input.replace(new RegExp(TAG_PATTERN.source, TAG_PATTERN.flags), "");
+
+  const hashtags = Array.from(withoutTags.matchAll(new RegExp(HASH_PATTERN.source, HASH_PATTERN.flags)))
+    .map((match) => match[1] ?? "")
+    .filter((tag) => tag.length > 0);
+
+  if (hashtags.length > 0) {
+    tags.hashtags = hashtags;
+  }
+
+  const title = withoutTags.replace(new RegExp(HASH_PATTERN.source, HASH_PATTERN.flags), "").trim();
+
+  return { title, tags };
 }
 
 /**
@@ -23,48 +120,20 @@ function resetLastIndex(re: RegExp): void {
  * Returns null if the line does not match the task pattern.
  */
 export function parseTaskLine(line: string, index = 0): Task | null {
-  const match = /^\s*[-*+]\s*\[(\s*[xX]?\s*)\]\s*(.*)$/.exec(line);
-  if (!match) return null;
-
-  const marker = match[1] ?? "";
-  const checked = marker.trim().toLowerCase() === "x";
-  let rest: string = match[2]!; // ✅ assert non-null
-
-  const tags: Record<string, string | string[]> = {};
-
-  // @tags
-  let t: RegExpExecArray | null;
-  resetLastIndex(TAG_RE);
-  while ((t = TAG_RE.exec(rest)) !== null) {
-    const [, key, value] = t;
-    if (key && value) {
-      tags[key] = value;
-    }
+  if (!processor) {
+    throw new Error("Markdown parser is not ready");
   }
-  resetLastIndex(TAG_RE);
-  rest = rest.replace(TAG_RE, "");
-  resetLastIndex(TAG_RE);
 
-  // #hashtags
-  const hashtags: string[] = [];
-  let h: RegExpExecArray | null;
-  resetLastIndex(HASH_RE);
-  while ((h = HASH_RE.exec(rest)) !== null) {
-    hashtags.push(h[1]!);
-  }
-  if (hashtags.length > 0) {
-    tags.hashtags = hashtags;
-  }
-  resetLastIndex(HASH_RE);
-  rest = rest.replace(HASH_RE, "");
-  resetLastIndex(HASH_RE);
+  const tree = processor.parse(line);
+  const [first] = buildTasksFromTree(tree, [line]);
+  if (!first) return null;
 
   return {
     id: hashTask(line, index),
     raw: line,
-    checked,
-    title: rest.trim(),
-    tags,
+    checked: first.checked,
+    title: first.title,
+    tags: first.tags,
     lineIndex: index
   };
 }
@@ -89,10 +158,28 @@ export function formatTask(task: Task): string {
  * Parse a Markdown document into an array of Tasks.
  */
 export function parseMarkdown(md: string): Task[] {
-  return md
-    .split(/\r?\n/)
-    .map((line, index) => parseTaskLine(line, index))
-    .filter((x): x is Task => x !== null);
+  if (!processor) {
+    throw new Error("Markdown parser is not ready");
+  }
+
+  const tree = processor.parse(md);
+  const lines = md.split(/\r?\n/);
+  return buildTasksFromTree(tree, lines).map((task) => ({
+    ...task,
+    id: hashTask(task.raw, task.lineIndex)
+  }));
+}
+
+function visitListItems(node: MdastNode, visitor: (node: MdastNode) => void): void {
+  if (!node) return;
+  if (node.type === "listItem") {
+    visitor(node);
+  }
+  if (Array.isArray(node.children)) {
+    for (const child of node.children) {
+      visitListItems(child, visitor);
+    }
+  }
 }
 
 function hashTask(raw: string, index: number): string {
