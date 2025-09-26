@@ -23,6 +23,10 @@ function badgeLocator(page: Page) {
   return indicatorLocator(page).locator("span").first();
 }
 
+function tooltipLocator(page: Page) {
+  return indicatorLocator(page).locator("xpath=ancestor-or-self::*[@data-tip]").first();
+}
+
 async function loadAppShell(page: Page): Promise<void> {
   await page.goto("/");
   await page.evaluate(() => localStorage.clear());
@@ -149,7 +153,7 @@ Given(
 Then("the tooltip explains how to retry or export the data", async ({ page }) => {
   const tooltipMessage =
     "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
-  const tooltip = page.locator("[data-tip]").first();
+  const tooltip = tooltipLocator(page);
   await expect(tooltip).toHaveAttribute("data-tip", tooltipMessage);
 
   const indicator = indicatorLocator(page);
