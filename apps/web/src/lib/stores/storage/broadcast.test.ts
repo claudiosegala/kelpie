@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { StorageBroadcast } from "./types";
+import { StorageBroadcastOrigin, StorageBroadcastScope, type StorageBroadcast } from "./types";
 
 const sampleBroadcast: StorageBroadcast = {
-  scope: "settings",
+  scope: StorageBroadcastScope.Settings,
   updatedAt: "2024-01-01T00:00:00.000Z",
-  origin: "local"
+  origin: StorageBroadcastOrigin.Local
 };
 
 function createStorageMock() {
@@ -99,15 +99,15 @@ describe("scheduleBroadcast", () => {
     const { scheduleBroadcast } = await import("./broadcast");
 
     const first: StorageBroadcast = {
-      scope: "config",
+      scope: StorageBroadcastScope.Config,
       updatedAt: "2024-01-02T00:00:00.000Z",
-      origin: "local"
+      origin: StorageBroadcastOrigin.Local
     };
 
     const second: StorageBroadcast = {
-      scope: "documents",
+      scope: StorageBroadcastScope.Documents,
       updatedAt: "2024-01-03T00:00:00.000Z",
-      origin: "external"
+      origin: StorageBroadcastOrigin.External
     };
 
     scheduleBroadcast(first);
@@ -187,9 +187,9 @@ describe("scheduleBroadcast", () => {
     expect(storage.setItem).toHaveBeenCalledTimes(1);
 
     const followUp: StorageBroadcast = {
-      scope: "history",
+      scope: StorageBroadcastScope.History,
       updatedAt: "2024-01-04T00:00:00.000Z",
-      origin: "local"
+      origin: StorageBroadcastOrigin.Local
     };
 
     scheduleBroadcast(followUp);

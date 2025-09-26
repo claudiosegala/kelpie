@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDocument, reorderDocuments, restoreDocument, softDeleteDocument, updateDocument } from "./documents";
 import { createInitialSnapshot } from "./defaults";
-import type { DocumentIndexEntry, DocumentSnapshot, StorageSnapshot } from "./types";
+import { AuditEventType, type DocumentIndexEntry, type DocumentSnapshot, type StorageSnapshot } from "./types";
 
 const BASE_CONFIG = {
   debounce: { writeMs: 500, broadcastMs: 200 },
@@ -91,7 +91,7 @@ describe("document mutations", () => {
     expect(result.index.map((entry) => entry.id)).toEqual(["doc-1", "doc-2"]);
     expect(result.settings.lastActiveDocumentId).toBe("doc-2");
     expect(result.audit.at(-1)).toMatchObject({
-      type: "document.created",
+      type: AuditEventType.DocumentCreated,
       metadata: { id: "doc-2", title: "Second doc" }
     });
   });
@@ -122,7 +122,7 @@ describe("document mutations", () => {
     expect(result.index[0]).toMatchObject({ title: "Renamed", updatedAt: now() });
     expect(result.settings.updatedAt).toBe(now());
     expect(result.audit.at(-1)).toMatchObject({
-      type: "document.updated",
+      type: AuditEventType.DocumentUpdated,
       metadata: { id: "doc-1", fields: ["title", "content", "lastEditedBy"] }
     });
   });
@@ -164,7 +164,7 @@ describe("document mutations", () => {
     });
     expect(result.settings.lastActiveDocumentId).toBe("doc-2");
     expect(result.audit.at(-1)).toMatchObject({
-      type: "document.deleted",
+      type: AuditEventType.DocumentDeleted,
       metadata: { id: "doc-1", purgeAfter: "2024-03-08T00:00:00.000Z" }
     });
   });
@@ -191,7 +191,7 @@ describe("document mutations", () => {
     const result = restoreDocument(snapshot, "doc-1", { now });
     expect(result.index[0]).toMatchObject({ deletedAt: null, purgeAfter: null, updatedAt: now() });
     expect(result.settings.lastActiveDocumentId).toBe("doc-1");
-    expect(result.audit.at(-1)).toMatchObject({ type: "document.restored", metadata: { id: "doc-1" } });
+    expect(result.audit.at(-1)).toMatchObject({ type: AuditEventType.DocumentRestored, metadata: { id: "doc-1" } });
   });
 
   it("reorders active documents and leaves deleted ones in place", () => {
@@ -231,7 +231,7 @@ describe("document mutations", () => {
     const result = reorderDocuments(snapshot, ["doc-2", "doc-1"], { now });
     expect(result.index.map((entry) => entry.id)).toEqual(["doc-2", "doc-1", "doc-3"]);
     expect(result.audit.at(-1)).toMatchObject({
-      type: "document.reordered",
+      type: AuditEventType.DocumentReordered,
       metadata: { before: ["doc-1", "doc-2"], after: ["doc-2", "doc-1"] }
     });
   });
@@ -245,13 +245,13 @@ describe("document mutations", () => {
       audit: [
         {
           id: "audit-1",
-          type: "document.created",
+          type: AuditEventType.DocumentCreated,
           createdAt: "2024-01-01T00:00:00.000Z",
           metadata: { id: "doc-0" }
         },
         {
           id: "audit-2",
-          type: "document.updated",
+          type: AuditEventType.DocumentUpdated,
           createdAt: "2024-01-02T00:00:00.000Z",
           metadata: { id: "doc-1", fields: ["title"] }
         }
@@ -273,7 +273,7 @@ describe("document mutations", () => {
     expect(result.audit[0]?.id).toBe("audit-2");
     expect(result.audit[1]).toMatchObject({
       id: "audit-3",
-      type: "document.created",
+      type: AuditEventType.DocumentCreated,
       metadata: { id: "doc-2", title: "Doc three" }
     });
   });
