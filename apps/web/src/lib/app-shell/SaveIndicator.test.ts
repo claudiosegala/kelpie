@@ -37,8 +37,7 @@ describe("SaveIndicator", () => {
     expect(indicator).toHaveAttribute("title", localTooltip);
     const label = within(indicator).getByText("Saving locally…");
     expect(label).toBeVisible();
-    const badge = indicator.querySelector(".badge");
-    expect(badge?.className).toContain("animate-pulse");
+    expect(indicator.className).toContain("animate-pulse");
   });
 
   it("shows saved timestamp when persistence succeeds", async () => {
@@ -52,7 +51,7 @@ describe("SaveIndicator", () => {
 
     const indicator = screen.getByLabelText(/Saved locally/);
     expect(indicator).toHaveAttribute("data-kind", "saved");
-    const timestamp = screen.getByText((content) => content.startsWith("(") && content.endsWith(")"));
+    const timestamp = within(indicator).getByText(/\d{1,2}:\d{2}/);
     expect(timestamp.textContent).toContain(":");
   });
 

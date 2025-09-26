@@ -23,16 +23,10 @@ export const shellState = readable<ShellState>(initialState, (set) => {
 });
 
 export function setLayout(layout: ShellLayout): void {
+  const normalized: ShellLayout = layout === "mobile" ? "desktop" : layout;
   shellStateStore.update((state) => {
-    if (state.layout === layout) return state;
-    if (layout === "mobile") {
-      return {
-        layout,
-        viewMode: state.viewMode,
-        activePanel: defaultPanelForMode(state.viewMode)
-      } satisfies ShellState;
-    }
-    return { ...state, layout };
+    if (state.layout === normalized) return state;
+    return { ...state, layout: normalized } satisfies ShellState;
   });
 }
 
@@ -40,14 +34,7 @@ export function setViewMode(mode: ViewMode): void {
   shellStateStore.update((state) => {
     if (state.viewMode === mode) return state;
     const nextActive = defaultPanelForMode(mode);
-    if (state.layout === "mobile") {
-      return { layout: state.layout, viewMode: mode, activePanel: nextActive } satisfies ShellState;
-    }
-    // Desktop retains the previously focused panel unless it becomes invalid.
-    if (!isPanelAllowedInMode(state.activePanel, mode)) {
-      return { layout: state.layout, viewMode: mode, activePanel: nextActive } satisfies ShellState;
-    }
-    return { ...state, viewMode: mode } satisfies ShellState;
+    return { ...state, viewMode: mode, activePanel: nextActive } satisfies ShellState;
   });
 }
 

@@ -31,10 +31,10 @@
   function viewButtonClasses(id: ViewMode): string {
     const isActive = $shellState.viewMode === id;
     return [
-      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-transparent text-base-content/70 transition-all duration-200",
+      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-base-100/70 text-base-content/80 shadow-none transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/70",
       isActive
-        ? "btn-primary text-primary-content shadow-sm"
-        : "hover:border-base-300 hover:bg-base-200/60 hover:text-base-content"
+        ? "bg-primary text-primary-content shadow-lg shadow-primary/30 ring-2 ring-primary/70"
+        : "hover:border-base-300 hover:bg-base-200/70 hover:text-base-content"
     ].join(" ");
   }
 
@@ -42,10 +42,10 @@
     const isActive = $shellState.activePanel === id;
     const disabled = !isPanelAllowedInMode(id, $shellState.viewMode);
     return [
-      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-transparent text-base-content/70 transition-all duration-200",
+      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-base-100/70 text-base-content/80 shadow-none transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary/70",
       isActive
-        ? "btn-secondary text-secondary-content shadow-sm"
-        : "hover:border-base-300 hover:bg-base-200/60 hover:text-base-content",
+        ? "bg-secondary text-secondary-content shadow-lg shadow-secondary/30 ring-2 ring-secondary/70"
+        : "hover:border-base-300 hover:bg-base-200/70 hover:text-base-content",
       disabled ? "btn-disabled opacity-40" : ""
     ]
       .filter(Boolean)
@@ -57,13 +57,15 @@
   }
 </script>
 
-<header class="navbar sticky top-0 z-30 border-b border-base-300/70 bg-base-100/95 px-3 py-2 backdrop-blur">
-  <div class="navbar-start flex items-center gap-3">
+<header
+  class="sticky top-0 z-30 flex w-full flex-wrap items-center justify-between gap-3 border-b border-base-300/70 bg-base-100/95 px-3 py-2 backdrop-blur"
+>
+  <div class="flex items-center gap-3">
     <div
       class="tooltip tooltip-bottom"
       data-tip={`Kelpie ${version}\nMarkdown to-do studio — edit, preview, and fine-tune your flow.`}
     >
-      <span class="text-lg font-black tracking-tight text-primary sm:text-xl">Kelpie</span>
+      <span class="text-2xl font-black tracking-tight text-primary sm:text-3xl">Kelpie</span>
     </div>
   </div>
 
@@ -128,7 +130,7 @@
     </div>
   </div>
 
-  <div class="navbar-end flex items-center gap-2">
+  <div class="flex flex-1 flex-wrap items-center justify-end gap-3 sm:gap-4">
     {#if $shellState.layout === "mobile"}
       <div
         class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
@@ -153,7 +155,7 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                class="h-3.5 w-3.5"
+                class="h-4 w-4"
               >
                 <path stroke-width="1.5" d="m4.5 15.5 6-6 3 3 6-6" />
                 <path stroke-width="1.5" d="M14.5 5.5h5v5" />
@@ -164,7 +166,7 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                class="h-3.5 w-3.5"
+                class="h-4 w-4"
               >
                 <path stroke-width="1.5" d="M3 12s3.5-5.5 9-5.5S21 12 21 12s-3.5 5.5-9 5.5S3 12 3 12Z" />
                 <circle cx="12" cy="12" r="2.5" stroke-width="1.5" />
@@ -175,7 +177,7 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                class="h-3.5 w-3.5"
+                class="h-4 w-4"
               >
                 <path
                   stroke-width="1.5"
@@ -193,6 +195,63 @@
 
     <div class="min-w-[9.5rem] sm:w-auto">
       <SaveIndicator />
+    </div>
+
+    <div
+      class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
+      role="group"
+      aria-label="Select workspace mode"
+    >
+      {#each viewOptions as option (option.id)}
+        <button
+          type="button"
+          class={viewButtonClasses(option.id)}
+          on:click={() => handleViewChange(option.id)}
+          aria-pressed={$shellState.viewMode === option.id}
+          aria-label={option.label}
+          title={option.label}
+        >
+          {#if option.id === "editor-preview"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              class="h-5 w-5"
+            >
+              <rect x="3.5" y="5.5" width="7" height="13" rx="1.5" stroke-width="1.5" />
+              <rect x="13.5" y="5.5" width="7" height="13" rx="1.5" stroke-width="1.5" />
+            </svg>
+          {:else if option.id === "preview-only"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              class="h-5 w-5"
+            >
+              <path stroke-width="1.5" d="M3 12s3.5-5.5 9-5.5S21 12 21 12s-3.5 5.5-9 5.5S3 12 3 12Z" />
+              <circle cx="12" cy="12" r="2.5" stroke-width="1.5" />
+            </svg>
+          {:else}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              class="h-5 w-5"
+            >
+              <path
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m12 4.75 1.28.74a1 1 0 0 0 1.46-.54l.42-1.43 2.06.6-.06 1.5a1 1 0 0 0 .86 1.02l1.47.23-.32 2.13-1.42.23a1 1 0 0 0-.83 1.17l.27 1.45-1.97.9-.8-1.22a1 1 0 0 0-1.32-.32l-1.28.74-1.28-.74a1 1 0 0 0-1.46.54l-.42 1.43-2.06-.6.06-1.5a1 1 0 0 0-.86-1.02l-1.47-.23.32-2.13 1.42-.23a1 1 0 0 0 .83-1.17l-.27-1.45 1.97-.9.8 1.22a1 1 0 0 0 1.32.32Z"
+              />
+              <circle cx="12" cy="12" r="2.25" stroke-width="1.5" />
+            </svg>
+          {/if}
+        </button>
+      {/each}
     </div>
 
     <button
