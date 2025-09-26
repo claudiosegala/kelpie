@@ -26,6 +26,8 @@
 
   type PanelPresentation = PanelDefinition & {
     className: string;
+    isAllowedInMode: boolean;
+    isActive: boolean;
     isHidden: boolean;
   };
 
@@ -39,11 +41,15 @@
   $: panelPresentations = visiblePanels.map((panel): PanelPresentation => {
     const isSettingsPanel = panel.id === "settings";
     const className = isSettingsPanel && settingsIsSolo ? PANEL_FULL_CLASS : PANEL_STACKED_CLASS;
+    const isAllowedInMode = isPanelAllowedInMode(panel.id, viewMode);
+    const isActive = isDesktopLayout || panel.id === activePanel;
     const isHidden = !isDesktopLayout && panel.id !== activePanel;
 
     return {
       ...panel,
       className,
+      isAllowedInMode,
+      isActive,
       isHidden
     };
   });
@@ -56,7 +62,8 @@
       <section
         class={panel.className}
         aria-label={panel.label}
-        data-active={isPanelAllowedInMode(panel.id, viewMode)}
+        data-active={panel.isActive}
+        data-allowed={panel.isAllowedInMode}
         data-panel={panel.id}
         data-testid={`panel-${panel.id}`}
         hidden={panel.isHidden}
@@ -66,8 +73,10 @@
             <slot name="editor" />
           {:else if panel.slot === "preview"}
             <slot name="preview" />
-          {:else}
+          {:else if panel.slot === "settings"}
             <slot name="settings" />
+          {:else}
+            <slot />
           {/if}
         </div>
       </section>
