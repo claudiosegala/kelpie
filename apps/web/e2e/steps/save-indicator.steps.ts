@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 import type { SaveStatusKind } from "../../src/lib/app-shell/contracts";
 
@@ -21,6 +21,20 @@ function indicatorLocator(page: Page) {
 
 function badgeLocator(page: Page) {
   return indicatorLocator(page).locator("span").first();
+}
+
+async function expectClasses(locator: Locator, expectedClasses: readonly string[]): Promise<void> {
+  const classList = await locator.getAttribute("class");
+  const tokens = new Set(
+    (classList ?? "")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter(Boolean)
+  );
+
+  const missingClasses = expectedClasses.filter((className) => !tokens.has(className));
+
+  expect(missingClasses).toStrictEqual([]);
 }
 
 async function loadAppShell(page: Page): Promise<void> {
@@ -93,8 +107,7 @@ Then("the indicator shows {string} with a pulsing badge", async ({ page }, label
   await expect(indicator).toHaveAttribute("data-kind", currentSaveStatusKind);
   await expect(indicator.getByText(label, { exact: true })).toBeVisible();
   const badge = badgeLocator(page);
-  await expect(badge).toHaveClass(/badge/);
-  await expect(badge).toHaveClass(/animate-pulse/);
+  await expectClasses(badge, ["badge", "animate-pulse"]);
 });
 
 Then("it reports the info tone styling", async ({ page }) => {
@@ -103,14 +116,8 @@ Then("it reports the info tone styling", async ({ page }) => {
 
   await expect(indicator).toHaveAttribute("data-kind", "saving");
 
-  const indicatorClasses = await indicator.getAttribute("class");
-  expect(indicatorClasses ?? "").toContain("text-info");
-  expect(indicatorClasses ?? "").toContain("border-info/60");
-  expect(indicatorClasses ?? "").toContain("bg-info/10");
-
-  const badgeClasses = await badge.getAttribute("class");
-  expect(badgeClasses ?? "").toContain("badge-info");
-  expect(badgeClasses ?? "").toContain("animate-pulse");
+  await expectClasses(indicator, ["text-info", "border-info/60", "bg-info/10"]);
+  await expectClasses(badge, ["border-info/40", "bg-info/20", "text-info/90", "animate-pulse"]);
 });
 
 Given(
