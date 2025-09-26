@@ -1,5 +1,7 @@
+import { browser } from "$app/environment";
 import { writable, derived } from "svelte/store";
 import { parseMarkdown, formatTask, type Task } from "../parsing/parseTask";
+import { markError, markSaved, markSaving } from "./persistence";
 
 export type PersistedState = {
     file: string;
@@ -22,6 +24,9 @@ const defaultState: PersistedState = {
 };
 
 function load(): PersistedState {
+    if (!browser) {
+        return defaultState;
+    }
     try {
         const raw = localStorage.getItem(KEY);
         if (!raw) return defaultState;
@@ -43,9 +48,17 @@ function load(): PersistedState {
 
 export const appState = writable<PersistedState>(load());
 
-appState.subscribe((state) => {
-    localStorage.setItem(KEY, JSON.stringify(state));
-});
+if (browser) {
+    appState.subscribe((state) => {
+        try {
+            markSaving();
+            localStorage.setItem(KEY, JSON.stringify(state));
+            queueMicrotask(markSaved);
+        } catch (error) {
+            markError(error);
+        }
+    });
+}
 
 /**
  * Derived store: parse tasks from Markdown file.
@@ -83,4 +96,3 @@ export function toggleTask(id: string): void {
         return { ...s, file: lines.join("\n") };
     });
 }
-
