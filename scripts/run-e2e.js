@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-require-imports */
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 
 const args = process.argv.slice(2);
 const env = { ...process.env };
@@ -14,6 +14,15 @@ if (browserArg) {
 
 if (!env.PLAYWRIGHT_BROWSERS) {
   env.PLAYWRIGHT_BROWSERS = env.CI ? "chromium,webkit" : "chromium";
+}
+
+const installResult = spawnSync("pnpm", ["exec", "playwright", "install"], {
+  stdio: "inherit",
+  env
+});
+
+if (installResult.status !== 0) {
+  process.exit(installResult.status ?? 1);
 }
 
 const child = spawn("pnpm", ["--filter", "web", "test:e2e"], {

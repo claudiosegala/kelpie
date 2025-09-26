@@ -72,6 +72,7 @@
       class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
       role="group"
       aria-label="Select workspace mode"
+      data-testid="view-mode-toggle"
     >
       {#each viewOptions as option (option.id)}
         <button
@@ -81,6 +82,7 @@
           aria-pressed={$shellState.viewMode === option.id}
           aria-label={option.label}
           title={option.label}
+          data-testid={`view-mode-${option.id}`}
         >
           {#if option.id === "editor-preview"}
             <svg
@@ -132,6 +134,7 @@
         class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
         role="group"
         aria-label="Select active panel"
+        data-testid="panel-toggle-group"
       >
         {#each PANEL_ORDER as panel (panel)}
           <button
@@ -142,6 +145,7 @@
             aria-label={panelLabels[panel]}
             title={panelLabels[panel]}
             aria-pressed={$shellState.activePanel === panel}
+            data-testid={`panel-toggle-${panel}`}
           >
             {#if panel === "editor"}
               <svg
