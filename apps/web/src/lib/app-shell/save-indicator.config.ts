@@ -8,6 +8,11 @@ type SaveIndicatorView = {
   tooltip: string;
 };
 
+export type SaveIndicatorTimestampDetails = {
+  display: string;
+  tooltipLine: string;
+};
+
 export const LOCAL_SAVE_TOOLTIP =
   "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
 export const ERROR_TOOLTIP =
@@ -51,7 +56,7 @@ const getConfigFor = (kind: SaveStatus["kind"]) => SAVE_INDICATOR_CONFIG[kind] ?
 export const toneFor = (kind: SaveStatus["kind"]) => getConfigFor(kind).tone;
 export const tooltipFor = (kind: SaveStatus["kind"]) => getConfigFor(kind).tooltip;
 
-export const getTimestampDetails = (status: SaveStatus) => {
+export const getTimestampDetails = (status: SaveStatus): SaveIndicatorTimestampDetails | undefined => {
   if (status.kind !== SaveStatusKind.Saved || !status.timestamp) {
     return undefined;
   }
