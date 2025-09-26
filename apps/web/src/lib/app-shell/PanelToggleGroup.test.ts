@@ -4,18 +4,14 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import PanelToggleGroup from "./PanelToggleGroup.svelte";
-import { PANEL_ORDER, type PanelId } from "./contracts";
+import { PanelId } from "./contracts";
+import { PANEL_DEFINITIONS, PANEL_LABELS } from "./panels";
 import { activatePanel, setLayout, setViewMode, shellState } from "$lib/stores/shell";
 
+const PANEL_ORDER = PANEL_DEFINITIONS.map((panel) => panel.id);
+
 function panelLabel(panel: PanelId): string {
-  switch (panel) {
-    case "editor":
-      return "Editor";
-    case "preview":
-      return "Preview";
-    case "settings":
-      return "Settings";
-  }
+  return PANEL_LABELS[panel];
 }
 
 describe("PanelToggleGroup", () => {
@@ -60,9 +56,9 @@ describe("PanelToggleGroup", () => {
 
     render(PanelToggleGroup);
 
-    const editorButton = screen.getByRole("button", { name: "Editor" });
-    const previewButton = screen.getByRole("button", { name: "Preview" });
-    const settingsButton = screen.getByRole("button", { name: "Settings" });
+    const editorButton = screen.getByRole("button", { name: panelLabel(PanelId.Editor) });
+    const previewButton = screen.getByRole("button", { name: panelLabel(PanelId.Preview) });
+    const settingsButton = screen.getByRole("button", { name: panelLabel(PanelId.Settings) });
 
     expect(editorButton).toBeDisabled();
     expect(previewButton).toBeDisabled();
@@ -76,8 +72,8 @@ describe("PanelToggleGroup", () => {
 
     render(PanelToggleGroup);
 
-    const previewButton = screen.getByRole("button", { name: "Preview" });
-    const editorButton = screen.getByRole("button", { name: "Editor" });
+    const previewButton = screen.getByRole("button", { name: panelLabel(PanelId.Preview) });
+    const editorButton = screen.getByRole("button", { name: panelLabel(PanelId.Editor) });
 
     await user.click(previewButton);
     await tick();

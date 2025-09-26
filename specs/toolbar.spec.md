@@ -48,13 +48,19 @@ the workspace.
 
 ## Structure
 
+- Layout utility tokens for the wrapper, brand cluster, controls cluster, and
+  save indicator wrapper live in `toolbar.constants.ts` so Tailwind class lists
+  stay co-located with other toolbar primitives.
 - `<header>` wrapper uses a sticky position at the top with slight background
   transparency and blur so content scrolls beneath it without losing contrast.
 - Left cluster renders the `ToolbarBrand` subcomponent which encapsulates all
-  branding copy, tooltip composition, and typography styles.
-- Right cluster (`flex-1` container):
+  branding copy, tooltip composition, and typography styles. The cluster is
+  addressable via `data-testid="toolbar-brand-cluster"` for instrumentation.
+- Right cluster (`flex-1` container) is exported as
+  `TOOLBAR_CONTROLS_CLUSTER_CLASSES` and carries `data-testid="toolbar-controls-cluster"`:
   - `PanelToggleGroup` (renders only when layout is mobile via its own logic).
-  - `SaveIndicator` contained in a width-constrained wrapper for stability.
+  - `SaveIndicator` contained in a width-constrained wrapper for stability and
+    labeled with `data-testid="toolbar-save-indicator-wrapper"`.
   - `ViewModeToggleButton` for switching between editor/preview/settings modes.
   - `ThemeToggleButton` for switching between light/dark themes.
 
@@ -113,6 +119,11 @@ the workspace.
 - Toolbar composition favors declarative stacking of imported components instead
   of inline helpers, so future additions (e.g., help menus) can be inserted by
   adding one more component import.
+- Layout class tokens and testing IDs are centralized in
+  `toolbar.constants.ts`, keeping styling, instrumentation, and tests aligned
+  without string duplication inside the Svelte markup.
+- `TOOLBAR_TEST_IDS` expose stable selectors so unit tests can target
+  high-level clusters without depending on specific DOM structures.
 
 ## Test Scenarios (Gherkin)
 
@@ -141,6 +152,11 @@ Feature: Toolbar interactions
     When I toggle the theme from the toolbar
     Then the document theme should be "dark"
     And the theme toggle label reads "Switch to light theme"
+
+  Scenario: Toolbar exposes stable layout clusters
+    Then the toolbar root uses the exported wrapper classes
+    And the brand cluster test id is available for instrumentation
+    And the controls cluster includes the save indicator wrapper and workspace controls
 
   Scenario: Panel toggle group only appears on mobile layouts
     When I resize the viewport to "mobile"
