@@ -1,13 +1,20 @@
 /// <reference types="node" />
 import { defineConfig } from "@playwright/test";
+import type { PlaywrightTestConfig } from "@playwright/test";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineBddConfig } from "playwright-bdd";
+
+const webAppDir = resolve(dirname(fileURLToPath(import.meta.url)));
 
 const testDir = defineBddConfig({
   features: "e2e/features/**/*.feature",
   steps: "e2e/steps/**/*.ts"
 });
 
-const availableProjects = [
+type PlaywrightProject = NonNullable<PlaywrightTestConfig["projects"]>[number];
+
+const availableProjects: PlaywrightProject[] = [
   { name: "chromium", use: { browserName: "chromium" } },
   { name: "webkit", use: { browserName: "webkit" } }
   // Firefox intentionally omitted
@@ -35,13 +42,13 @@ export default defineConfig({
     ? {
         command: "pnpm build && pnpm preview",
         port: 4173,
-        cwd: "apps/web" // 👈 force cwd
+        cwd: webAppDir
       }
     : {
         command: "pnpm dev",
         url: "http://localhost:5173",
         reuseExistingServer: true,
-        cwd: "apps/web" // 👈 force cwd
+        cwd: webAppDir
       },
 
   use: {
