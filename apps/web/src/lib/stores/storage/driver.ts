@@ -1,3 +1,4 @@
+import { getLocalStorage, getWindow } from "./environment";
 import type { StorageSnapshot } from "./types";
 
 /**
@@ -20,8 +21,9 @@ export interface StorageDriver {
 export function createLocalStorageDriver(key: string): StorageDriver {
   return {
     load() {
-      if (typeof localStorage === "undefined") return null;
-      const raw = localStorage.getItem(key);
+      const storage = getLocalStorage();
+      if (!storage) return null;
+      const raw = storage.getItem(key);
       if (!raw) return null;
 
       try {
@@ -32,15 +34,18 @@ export function createLocalStorageDriver(key: string): StorageDriver {
       }
     },
     save(snapshot) {
-      if (typeof localStorage === "undefined") return;
-      localStorage.setItem(key, JSON.stringify(snapshot));
+      const storage = getLocalStorage();
+      if (!storage) return;
+      storage.setItem(key, JSON.stringify(snapshot));
     },
     clear() {
-      if (typeof localStorage === "undefined") return;
-      localStorage.removeItem(key);
+      const storage = getLocalStorage();
+      if (!storage) return;
+      storage.removeItem(key);
     },
     subscribe(callback) {
-      if (typeof window === "undefined") {
+      const host = getWindow();
+      if (!host) {
         return () => {};
       }
 
@@ -50,8 +55,8 @@ export function createLocalStorageDriver(key: string): StorageDriver {
         }
       };
 
-      window.addEventListener("storage", handler);
-      return () => window.removeEventListener("storage", handler);
+      host.addEventListener("storage", handler);
+      return () => host.removeEventListener("storage", handler);
     }
   };
 }
