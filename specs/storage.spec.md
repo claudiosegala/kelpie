@@ -1,13 +1,16 @@
 # App Web Storage Spec
 
 ## 1. Introduction
+
 This document describes the design of the local storage layer.
 The storage layer is responsible for persisting documents (Markdown “tabs”) and UI settings on the client, with support for undo/redo, multi-tab sync, and schema migration.
 
 This specification does **not** prescribe implementation details or code, but defines the expected behavior, boundaries, and responsibilities.
 
 ## 2. Outcomes
+
 From the perspective of the end user:
+
 - A user can close their browser and return later to find documents and settings exactly as they left them.
 - A user can undo changes to a document (via Command+Z).
 - Deleting a document will not erase it immediately; it remains recoverable for 7 days.
@@ -15,11 +18,13 @@ From the perspective of the end user:
 - The app never corrupts or partially saves a document: writes are either complete or fail.
 
 From the perspective of developers:
+
 - Configuration, documents, settings, history, and audit are persisted consistently.
 - Undo/redo timelines are stored for both documents and settings (though settings undo is not exposed yet).
 - Storage behavior is inspectable and resettable in development.
 
 ## 3. Goals
+
 - Persist documents and settings **locally and indefinitely**.
 - Support **undo/redo** history (separate for docs and settings).
 - Provide **multi-tab sync** within the same browser.
@@ -29,6 +34,7 @@ From the perspective of developers:
 - Be prepared for future features such as encryption, backups, and error UX.
 
 ## 4. Scope
+
 - In scope (MVP):
   - Local persistence (via browser storage)
   - Separate namespaces for docs, settings, configuration
@@ -46,6 +52,7 @@ From the perspective of developers:
   - Encryption or minification
 
 ## 5. Data Entities
+
 Storage manages several categories of data.
 
 - **Meta Information**
@@ -79,6 +86,7 @@ Storage manages several categories of data.
   - Retained up to a configured maximum number of entries.
 
 ## 6. Garbage Collection
+
 - **Soft deletes**:
   - A deleted doc is marked with a deletion timestamp and a purge date (7 days later).
 
@@ -93,6 +101,7 @@ Storage manages several categories of data.
   - In such a case, an unrecoverable error is raised internally.
 
 ## 7. History & Undo/Redo
+
 - **Separate timelines** for documents and settings.
 - Document undo/redo is exposed (keyboard shortcuts).
 - Settings undo/redo is stored but not exposed in MVP; to be surfaced later.
@@ -101,6 +110,7 @@ Storage manages several categories of data.
 - History is automatically purged beyond retention windows or caps.
 
 ## 8. Writes & Sync
+
 - **Debounced writes**: changes are persisted after a short inactivity period (default 2s).
 - **Debounced UI propagation**: updates are pushed to UI after a shorter debounce (default 1s).
 - **Atomicity**: each write must succeed fully or fail completely.
@@ -110,6 +120,7 @@ Storage manages several categories of data.
   - No conflict resolution beyond this in MVP.
 
 ## 9. Error Handling & UX
+
 - MVP: errors are not surfaced to the end user.
 - Errors are logged internally for developers.
 - Future work:
@@ -118,6 +129,7 @@ Storage manages several categories of data.
   - Tools to restore default tutorial doc or purge old history interactively.
 
 ## 10. Audit Trail
+
 - All meaningful actions are recorded: document lifecycle, settings updates, migrations, corruption events.
 - Entries include timestamp, type, author, and optional metadata.
 - End-users can access a basic activity log.
@@ -125,6 +137,7 @@ Storage manages several categories of data.
 - The audit log is capped in size.
 
 ## 11. API Structure
+
 The storage layer exposes a conceptual API.
 This API is descriptive: exact function names and signatures are implementation details, but the **responsibilities and contracts** must be respected.
 
@@ -163,11 +176,13 @@ This API is descriptive: exact function names and signatures are implementation 
   - Receive changes and apply last-write-wins.
 
 ## 12. Developer Experience
+
 - Inspector panel with parsed view of storage, history, and audit.
 - Utilities for reset, purge, simulate first run.
 - Console logging: debug in development, silent in production.
 
 ## 13. Example Scenarios
+
 These scenarios serve both as documentation and as test case inspiration:
 
 1. **User reopens the app**:
@@ -189,12 +204,14 @@ These scenarios serve both as documentation and as test case inspiration:
    - No partial or corrupted data is written.
 
 ## 14. Open Questions & Assumptions
+
 - Exact UX for handling storage full or corruption errors.
 - Whether to add warnings when approaching quota.
 - If settings undo/redo should eventually be merged into a global timeline.
 - Whether to implement import/export before backups, or vice versa.
 
 ## 15. AI Handoff & Test Tracking
+
 This section is for the AI or developers to update after implementation runs.
 
 - **Where this logic lives**:

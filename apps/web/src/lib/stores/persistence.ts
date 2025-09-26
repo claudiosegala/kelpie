@@ -8,15 +8,14 @@ const { subscribe, set } = writable<SaveStatus>(initialStatus);
 export const saveStatus = { subscribe };
 
 export function markSaving(): void {
-    set({ kind: "saving", message: "Saving locally\u2026", timestamp: Date.now() });
+  set({ kind: "saving", message: "Saving locally\u2026", timestamp: Date.now() });
 }
 
 export function markSaved(): void {
-    set({ kind: "saved", message: "Saved locally \u2713", timestamp: Date.now() });
+  set({ kind: "saved", message: "Saved locally \u2713", timestamp: Date.now() });
 }
 
 export function markError(error: unknown): void {
-    const message =
-        error instanceof Error ? error.message : typeof error === "string" ? error : "Failed to save locally";
-    set({ kind: "error", message, timestamp: Date.now() });
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "Failed to save locally";
+  set({ kind: "error", message, timestamp: Date.now() });
 }

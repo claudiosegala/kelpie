@@ -30,5 +30,8 @@ export default [
       parser: tseslint.parser,
       globals: globals.node
     }
+  },
+  {
+    ignores: [".svelte-kit/**", ".features-gen/**"]
   }
 ];

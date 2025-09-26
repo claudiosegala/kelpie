@@ -55,8 +55,10 @@ pnpm install
 ```
 
 # Optional: enable Husky hooks in your fork
+
 pnpm dlx husky init
-```
+
+````
 
 ### 5. Run the dev server
 
@@ -64,7 +66,7 @@ pnpm dlx husky init
 pnpm dev
 
 # 👉 Then open: http://localhost:5173
-```
+````
 
 ---
 
@@ -77,8 +79,8 @@ pnpm test:unit
 pnpm test:unit:watch
 ```
 
-* Run automatically in **CI**.
-* Run locally before pushing for faster feedback.
+- Run automatically in **CI**.
+- Run locally before pushing for faster feedback.
 
 ### End-to-end tests (Playwright + Gherkin)
 
@@ -96,9 +98,9 @@ pnpm test:e2e
 pnpm test:e2e:all
 ```
 
-* E2E tests use **fixtures** (`apps/web/src/lib/fixtures/*.md`).
-* Human-readable `.feature` files live in `/specs` (Gherkin fences).
-* Chromium runs in CI; WebKit is optional locally but helps catch platform differences.
+- E2E tests use **fixtures** (`apps/web/src/lib/fixtures/*.md`).
+- Human-readable `.feature` files live in `/specs` (Gherkin fences).
+- Chromium runs in CI; WebKit is optional locally but helps catch platform differences.
 
 ### Additional checks
 
@@ -116,9 +118,9 @@ Run these before opening a PR; CI will run them again for verification.
 
 This project is **spec-driven**:
 
-* `/specs/*.spec.md` = human-readable feature definitions.
-* Each spec may contain fenced ```gherkin blocks → extracted to `.feature` files for Playwright.
-* Roadmap, release criteria, and dev workflow live under `/specs`.
+- `/specs/*.spec.md` = human-readable feature definitions.
+- Each spec may contain fenced ```gherkin blocks → extracted to `.feature` files for Playwright.
+- Roadmap, release criteria, and dev workflow live under `/specs`.
 
 Example:
 
@@ -156,12 +158,12 @@ No pre-commit hooks → **CI enforces** lint/typecheck on every PR & push. Consi
 
 ## ⚙️ CI/CD
 
-* **CI workflow (`ci.yml`)**
-  * Runs lint, typecheck, unit tests, and build
-  * Triggers on PRs + pushes to `main`
-* **Pages workflow (`pages-deploy.yml`)**
-  * Builds static SvelteKit app with `adapter-static`
-  * Deploys to GitHub Pages on push to `main`
+- **CI workflow (`ci.yml`)**
+  - Runs lint, typecheck, unit tests, and build
+  - Triggers on PRs + pushes to `main`
+- **Pages workflow (`pages-deploy.yml`)**
+  - Builds static SvelteKit app with `adapter-static`
+  - Deploys to GitHub Pages on push to `main`
 
 Enable in **GitHub Settings → Pages → Build and deployment → GitHub Actions**. If your fork does not need deploy previews, you can disable GitHub Pages to speed up CI.
 
@@ -198,9 +200,9 @@ Enable in **GitHub Settings → Pages → Build and deployment → GitHub Action
 
 Dev-only, optional:
 
-* `/packages/prompt-library/` holds reusable AI prompts.
-* Examples: spec validation, Gherkin generation, code refactor.
-* Run manually (future script: `pnpm ai:refactor`).
+- `/packages/prompt-library/` holds reusable AI prompts.
+- Examples: spec validation, Gherkin generation, code refactor.
+- Run manually (future script: `pnpm ai:refactor`).
 
 ---
 

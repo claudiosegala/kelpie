@@ -5,6 +5,7 @@ Kelpie is an experimental, spec-driven **Markdown to-do editor** that turns GitH
 > 📸 **Coming soon:** add a screenshot of the editor/preview once the UI stabilizes.
 
 ## Table of Contents
+
 - [Features](#-features)
 - [Why Markdown?](#-why-markdown)
 - [Quick Start](#-quick-start)
@@ -108,4 +109,3 @@ If you have an idea or question, feel free to open a discussion or issue. We fol
 ## 📝 License
 
 Kelpie is open source under the [MIT License](./LICENSE).
-
