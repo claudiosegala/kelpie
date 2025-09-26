@@ -17,15 +17,16 @@ import {
 } from "./history";
 import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
-import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./instrumentation";
-import { estimateSnapshotSize } from "./size";
-import type {
-  HistoryEntry,
-  IsoDateTimeString,
-  RuntimeConfiguration,
-  StorageBroadcast,
-  StorageSnapshot,
-  UiSettings
+import {
+  AuditEventType,
+  StorageBroadcastOrigin,
+  StorageBroadcastScope,
+  type HistoryEntry,
+  type IsoDateTimeString,
+  type RuntimeConfiguration,
+  type StorageBroadcast,
+  type StorageSnapshot,
+  type UiSettings
 } from "./types";
 
 export type StorageCoreState = {
@@ -82,7 +83,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
           metadata.checksum = checksum;
         }
 
-        corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+        corruptionAudit = createAuditEntry(AuditEventType.StorageCorruption, now(), metadata);
         recordCorruption({
           reason: error.reason,
           expectedChecksum: error.expectedChecksum,

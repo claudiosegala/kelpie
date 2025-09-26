@@ -1,6 +1,6 @@
 import { appendAuditEntries, createAuditEntry } from "../audit";
 import { STORAGE_SCHEMA_VERSION } from "../constants";
-import type { IsoDateTimeString, StorageSnapshot } from "../types";
+import { AuditEventType, type IsoDateTimeString, type StorageSnapshot } from "../types";
 
 export type StorageMigration = {
   from: number;
@@ -91,7 +91,7 @@ export function runMigrations(
 
   const migratedFrom = String(originalVersion);
   const completedAt = now();
-  const auditEntry = createAuditEntry("migration.completed", completedAt, {
+  const auditEntry = createAuditEntry(AuditEventType.MigrationCompleted, completedAt, {
     from: originalVersion,
     to: targetVersion,
     steps: applied.map((step) => ({ from: step.from, to: step.to }))
