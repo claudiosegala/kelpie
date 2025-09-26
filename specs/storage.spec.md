@@ -198,7 +198,7 @@ These scenarios serve both as documentation and as test case inspiration:
 This section is for the AI or developers to update after implementation runs.
 
 - **Where this logic lives**:
- - `/apps/web/src/lib/stores/`
+  - `/apps/web/src/lib/stores/`
 
 - **What has been implemented**:
   - (AI fills in)

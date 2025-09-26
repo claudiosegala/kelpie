@@ -170,12 +170,12 @@ This section is for the AI or developers to update after implementation runs.
   - (AI fills in)
 
 - **Test files and coverage:**:
-- E2E for toolbar state & undo/redo buttons: `/apps/web/e2e/shell-toolbar.test.ts`
-- E2E for save indicator (saving/saved/error): `/apps/web/e2e/shell-save-indicator.test.ts`
-- E2E for debounce & propagation to preview: `/apps/web/e2e/shell-debounce.test.ts`
-- E2E for error bubbling & toast notifications: `/apps/web/e2e/shell-errors.test.ts`
-- E2E for panel switching (desktop & mobile): `/apps/web/e2e/shell-panel-switching.test.ts`
-- E2E for theme updates (live DaisyUI changes): `/apps/web/e2e/shell-theme.test.ts`
-- E2E for PWA offline mode validation: `/apps/web/e2e/shell-offline.test.ts`
+  - E2E for toolbar state & undo/redo buttons: `/apps/web/e2e/shell-toolbar.test.ts`
+  - E2E for save indicator (saving/saved/error): `/apps/web/e2e/shell-save-indicator.test.ts`
+  - E2E for debounce & propagation to preview: `/apps/web/e2e/shell-debounce.test.ts`
+  - E2E for error bubbling & toast notifications: `/apps/web/e2e/shell-errors.test.ts`
+  - E2E for panel switching (desktop & mobile): `/apps/web/e2e/shell-panel-switching.test.ts`
+  - E2E for theme updates (live DaisyUI changes): `/apps/web/e2e/shell-theme.test.ts`
+  - E2E for PWA offline mode validation: `/apps/web/e2e/shell-offline.test.ts`
 
 This section is continuously updated as progress is made.
