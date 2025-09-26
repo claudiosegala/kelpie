@@ -10,17 +10,17 @@ type SaveStatusUpdate = {
   timestamp?: string | number | null;
 };
 
-const SAVE_INDICATOR_SELECTOR = "[data-kind]";
+const SAVE_INDICATOR_TEST_ID = "save-indicator";
 
 let currentSaveStatusKind: SaveStatusKind = "idle";
 let lastTimestampIso: string | null = null;
 
 function indicatorLocator(page: Page) {
-  return page.locator(SAVE_INDICATOR_SELECTOR).first();
+  return page.getByTestId(SAVE_INDICATOR_TEST_ID);
 }
 
 function badgeLocator(page: Page) {
-  return indicatorLocator(page).locator("span").first();
+  return indicatorLocator(page);
 }
 
 async function expectClasses(locator: Locator, expectedClasses: readonly string[]): Promise<void> {

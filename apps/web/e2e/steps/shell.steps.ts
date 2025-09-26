@@ -1,9 +1,9 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { createBdd } from "playwright-bdd";
 
 const { When, Then } = createBdd();
 
-const layoutSelector = "div[data-layout][data-mode]";
+const shellTestId = "app-shell";
 
 const viewModeIds = new Map<string, string>([
   ["Editor & preview", "editor-preview"],
@@ -60,17 +60,18 @@ When("I resize the viewport to {string}", async ({ page }, layout: string) => {
   await page.setViewportSize(viewport);
 
   const targetLayout = normalized === "mobile" ? "mobile" : "desktop";
-  const shell = page.locator(layoutSelector).first();
+  const shell = page.getByTestId(shellTestId);
   await expect(shell).toHaveAttribute("data-layout", targetLayout);
 });
 
 Then("the layout should be {string}", async ({ page }, layout: string) => {
-  const shell = page.locator(layoutSelector).first();
+  const shell = page.getByTestId(shellTestId);
   await expect(shell).toHaveAttribute("data-layout", layout);
 });
 
-function panelLocator(page: Page, label: string) {
-  return page.getByRole("region", { name: label, exact: true });
+function panelLocator(page: Page, label: string): Locator {
+  const panelId = getTestId(panelIds, label, "panel");
+  return page.getByTestId(`panel-${panelId}`);
 }
 
 Then("the {string} panel should be visible", async ({ page }, label: string) => {
@@ -80,5 +81,12 @@ Then("the {string} panel should be visible", async ({ page }, label: string) => 
 
 Then("the {string} panel should be hidden", async ({ page }, label: string) => {
   const panel = panelLocator(page, label);
-  await expect(panel).toHaveJSProperty("hidden", true);
+  const count = await panel.count();
+
+  if (count === 0) {
+    await expect(panel).toHaveCount(0);
+    return;
+  }
+
+  await expect(panel).toBeHidden();
 });

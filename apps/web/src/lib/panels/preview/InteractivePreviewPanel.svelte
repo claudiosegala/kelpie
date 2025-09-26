@@ -87,6 +87,7 @@
             class="rounded-2xl border border-base-300/70 bg-base-100/70 p-3 shadow-sm transition hover:border-primary/40 hover:bg-base-100"
             data-completed={task.checked}
             data-testid="task-card"
+            data-task-title={task.title}
           >
             <label class="group flex items-start gap-4">
               <span class="relative mt-1 flex h-5 w-5 items-center justify-center">
@@ -98,6 +99,7 @@
                   aria-label={`Toggle ${task.title}`}
                   data-testid="task-checkbox"
                   data-task-id={task.id}
+                  data-task-title={task.title}
                 />
                 <span
                   class="pointer-events-none absolute inset-0 rounded-full border-2 border-base-content/30 bg-base-200/80 transition-all duration-200 peer-checked:border-primary peer-checked:bg-primary/90"
@@ -120,6 +122,7 @@
                       task.checked ? "text-base-content/50 line-through" : "text-base-content"
                     }`}
                     data-testid="task-title"
+                    data-task-title={task.title}
                   >
                     {task.title}
                   </p>
