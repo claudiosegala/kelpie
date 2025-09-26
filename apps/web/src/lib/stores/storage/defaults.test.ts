@@ -31,6 +31,8 @@ describe("storage defaults", () => {
       historyRetentionDays: DEFAULT_HISTORY_RETENTION_DAYS,
       historyEntryCap: DEFAULT_HISTORY_ENTRY_CAP,
       auditEntryCap: DEFAULT_AUDIT_ENTRY_CAP,
+      enableAudit: true,
+      redactAuditMetadata: false,
       softDeleteRetentionDays: DEFAULT_SOFT_DELETE_RETENTION_DAYS,
       quotaWarningBytes: DEFAULT_QUOTA_WARNING_BYTES,
       quotaHardLimitBytes: DEFAULT_QUOTA_HARD_LIMIT_BYTES,

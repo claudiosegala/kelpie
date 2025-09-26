@@ -19,7 +19,12 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
       historyRetentionDays: 7,
       historyEntryCap: 50,
       auditEntryCap: 20,
-      softDeleteRetentionDays: 7
+      enableAudit: true,
+      redactAuditMetadata: false,
+      softDeleteRetentionDays: 7,
+      quotaWarningBytes: 5_000,
+      quotaHardLimitBytes: 10_000,
+      gcIdleTriggerMs: 30_000
     },
     settings: {
       lastActiveDocumentId: null,
@@ -100,15 +105,23 @@ const createStorageEngineMock = vi.fn(() => ({
   settings: { subscribe: settingsStore.subscribe },
   update: (updater: (snapshot: StorageSnapshot) => StorageSnapshot) => updateMock(updater),
   refresh: vi.fn(),
-  reset: vi.fn()
+  reset: vi.fn(),
+  simulateFirstRun: vi.fn(),
+  runGarbageCollection: vi.fn(),
+  history: {
+    capture: vi.fn(),
+    undo: vi.fn(),
+    redo: vi.fn(),
+    timeline: vi.fn()
+  }
 }));
 
 const markSaving = vi.fn();
 const markSaved = vi.fn();
 const markError = vi.fn();
 
-vi.mock("./storage", () => ({
-  createStorageEngine: createStorageEngineMock
+vi.mock("./storage/instance", () => ({
+  storage: createStorageEngineMock()
 }));
 
 vi.mock("./persistence", () => ({

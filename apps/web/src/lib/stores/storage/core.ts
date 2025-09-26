@@ -17,15 +17,15 @@ import {
 } from "./history";
 import { normaliseSnapshotForPersistence } from "./garbage-collection";
 import { runMigrations } from "./migrations";
-import {
-  StorageBroadcastOrigin,
-  StorageBroadcastScope,
-  type HistoryEntry,
-  type IsoDateTimeString,
-  type RuntimeConfiguration,
-  type StorageBroadcast,
-  type StorageSnapshot,
-  type UiSettings
+import { logStorageMutation, recordCorruption, recordMigrationSummary } from "./instrumentation";
+import { estimateSnapshotSize } from "./size";
+import type {
+  HistoryEntry,
+  IsoDateTimeString,
+  RuntimeConfiguration,
+  StorageBroadcast,
+  StorageSnapshot,
+  UiSettings
 } from "./types";
 
 export type StorageCoreState = {
@@ -47,6 +47,8 @@ export type StorageCore = {
   subscribe(listener: StorageCoreListener): () => void;
   refresh(): void;
   reset(): void;
+  simulateFirstRun(): void;
+  runGarbageCollection(): void;
   update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean;
   history: {
     capture(input: HistoryCaptureInput): HistoryCaptureResult;
@@ -81,10 +83,24 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
         }
 
         corruptionAudit = createAuditEntry("storage.corruption", now(), metadata);
+        recordCorruption({
+          reason: error.reason,
+          expectedChecksum: error.expectedChecksum,
+          actualChecksum: error.actualChecksum
+        });
       }
     }) ?? createInitialSnapshot();
 
+  const migrationStart = Date.now();
   const migrationResult = runMigrations(loadedSnapshot, STORAGE_SCHEMA_VERSION, { now });
+  const migrationDurationMs = Date.now() - migrationStart;
+
+  recordMigrationSummary({
+    fromVersion: loadedSnapshot.meta.version ?? null,
+    toVersion: STORAGE_SCHEMA_VERSION,
+    durationMs: migrationDurationMs,
+    applied: migrationResult.applied.map((migration) => `${migration.from}->${migration.to}`)
+  });
 
   let initialSnapshot = migrationResult.snapshot;
 
@@ -98,6 +114,11 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
   if (shouldPersist) {
     const prepared = normaliseSnapshotForPersistence(initialSnapshot, { now });
     driver.save(prepared.snapshot);
+    logStorageMutation("storage.boot.persist", {
+      beforeBytes: loadedSnapshot.meta.approxSizeBytes ?? estimateSnapshotSize(loadedSnapshot),
+      afterBytes: prepared.sizeInBytes,
+      metadata: { reason: corruptionAudit ? "corruption" : "migration" }
+    });
     initialSnapshot = prepared.snapshot;
   }
 
@@ -122,13 +143,18 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
 
   function applySnapshot(
     nextSnapshot: StorageSnapshot,
-    { persist = false, emitBroadcast = false }: { persist?: boolean; emitBroadcast?: boolean } = {}
+    {
+      persist = false,
+      emitBroadcast = false,
+      label = "storage.update"
+    }: { persist?: boolean; emitBroadcast?: boolean; label?: string } = {}
   ): boolean {
     const previous = currentSnapshot;
     let candidate = nextSnapshot;
+    let prepared: ReturnType<typeof normaliseSnapshotForPersistence> | null = null;
 
     if (persist && candidate !== previous) {
-      const prepared = normaliseSnapshotForPersistence(candidate, { now });
+      prepared = normaliseSnapshotForPersistence(candidate, { now });
       candidate = prepared.snapshot;
     }
 
@@ -137,6 +163,11 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
 
     if (persist && changed) {
       driver.save(candidate);
+      logStorageMutation(label, {
+        beforeBytes: previous.meta.approxSizeBytes ?? estimateSnapshotSize(previous),
+        afterBytes: prepared?.sizeInBytes ?? estimateSnapshotSize(candidate),
+        metadata: { broadcast: emitBroadcast }
+      });
     }
 
     currentSnapshot = candidate;
@@ -167,7 +198,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
       return;
     }
 
-    applySnapshot(next);
+    applySnapshot(next, { label: "storage.refresh" });
   }
 
   function reset(): void {
@@ -176,7 +207,44 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
       config: createDefaultConfiguration()
     };
 
-    applySnapshot(freshSnapshot, { persist: true, emitBroadcast: true });
+    const seeded = {
+      ...freshSnapshot,
+      audit: appendAuditEntries(freshSnapshot, createAuditEntry("storage.reset", now()))
+    } satisfies StorageSnapshot;
+
+    applySnapshot(seeded, { persist: true, emitBroadcast: true, label: "storage.reset" });
+  }
+
+  function simulateFirstRun(): void {
+    const base = createInitialSnapshot();
+    const timestamp = now();
+
+    const seeded: StorageSnapshot = {
+      ...base,
+      config: currentSnapshot.config,
+      meta: {
+        ...base.meta,
+        installationId: currentSnapshot.meta.installationId,
+        createdAt: currentSnapshot.meta.createdAt,
+        lastOpenedAt: timestamp
+      }
+    };
+
+    const annotated = {
+      ...seeded,
+      audit: appendAuditEntries(seeded, createAuditEntry("storage.simulatedFirstRun", timestamp))
+    } satisfies StorageSnapshot;
+
+    applySnapshot(annotated, { persist: true, emitBroadcast: true, label: "storage.simulatedFirstRun" });
+  }
+
+  function runGarbageCollection(): void {
+    const prepared = normaliseSnapshotForPersistence(currentSnapshot, { now });
+    applySnapshot(prepared.snapshot, {
+      persist: true,
+      emitBroadcast: true,
+      label: "storage.gc.run"
+    });
   }
 
   function update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean {
@@ -186,7 +254,7 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
       throw new Error("storage.update must return a snapshot");
     }
 
-    return applySnapshot(nextSnapshot, { persist: true, emitBroadcast: true });
+    return applySnapshot(nextSnapshot, { persist: true, emitBroadcast: true, label: "storage.update" });
   }
 
   driver.subscribe(() => {
@@ -204,11 +272,17 @@ export function createStorageCore(options: StorageCoreOptions): StorageCore {
     },
     refresh,
     reset,
+    simulateFirstRun,
+    runGarbageCollection,
     update,
     history: {
       capture(input) {
         const result = captureHistorySnapshot(currentSnapshot, input, { now });
-        applySnapshot(result.snapshot, { persist: true, emitBroadcast: true });
+        applySnapshot(result.snapshot, {
+          persist: true,
+          emitBroadcast: true,
+          label: `history.capture.${input.scope}`
+        });
         return result;
       },
       undo(target, context) {

@@ -14,6 +14,10 @@ export type StorageEngine = {
   refresh(): void;
   /** Resets storage to defaults, clearing existing data. */
   reset(): void;
+  /** Clears persisted documents while preserving configuration overrides. */
+  simulateFirstRun(): void;
+  /** Runs garbage collection immediately using the current snapshot. */
+  runGarbageCollection(): void;
   /**
    * Applies a mutation to the in-memory snapshot and persists it via the driver.
    * Returns true when the snapshot reference changed (indicating a write occurred).
@@ -54,6 +58,8 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
     history: core.history,
     refresh: core.refresh,
     reset: core.reset,
+    simulateFirstRun: core.simulateFirstRun,
+    runGarbageCollection: core.runGarbageCollection,
     update: core.update
   };
 }

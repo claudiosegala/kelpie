@@ -24,6 +24,8 @@ export type RuntimeConfiguration = {
   historyRetentionDays: number;
   historyEntryCap: number;
   auditEntryCap: number;
+  enableAudit: boolean;
+  redactAuditMetadata: boolean;
   softDeleteRetentionDays: number;
   quotaWarningBytes: number;
   quotaHardLimitBytes: number;
