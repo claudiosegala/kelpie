@@ -54,8 +54,11 @@ describe("SaveIndicator", () => {
     const indicator = screen.getByTestId("save-indicator");
     expect(indicator).toHaveAccessibleName(/Saved locally/);
     expect(indicator).toHaveAttribute("data-kind", "saved");
+    expect(indicator).toHaveAttribute("title", expect.stringContaining("Last saved at"));
+    expect(indicator.getAttribute("title")).toContain("\nLast saved at ");
     const timestamp = within(indicator).getByText(/\(.+:.+\)/);
     expect(timestamp.textContent).toMatch(/^\(.+\)$/);
+    expect(indicator).toHaveAttribute("aria-label", expect.stringContaining("Last saved at"));
   });
 
   it("surfaces errors with retry tooltip", async () => {
@@ -69,5 +72,6 @@ describe("SaveIndicator", () => {
     expect(indicator).toHaveAttribute("data-kind", "error");
     expect(indicator).toHaveAttribute("title", errorTooltip);
     expect(within(indicator).getByText("Disk full")).toBeVisible();
+    expect(indicator).toHaveAttribute("aria-label", `${"Disk full"}. ${errorTooltip}`);
   });
 });

@@ -5,25 +5,22 @@
   import { saveStatus } from "$lib/stores/persistence";
   import type { SaveStatus } from "$lib/app-shell/contracts";
 
-  const localSaveTooltip =
+  const LOCAL_SAVE_TOOLTIP =
     "Changes are stored locally on this device for now. Cloud sync will be introduced in a future release.";
-  const errorTooltip =
+  const ERROR_TOOLTIP =
     "We couldn't save locally. Retry or export your data to keep a copy while we work on cloud sync.";
 
+  type ToneToken = "success" | "info" | "error";
   type ToneClasses = { badge: string; icon: string };
 
-  const toneByKind: Record<SaveStatus["kind"], ToneClasses> = {
-    idle: {
+  const TONE_CLASSES: Record<ToneToken, ToneClasses> = {
+    success: {
       badge: "border-success/40 bg-success/10 text-success",
       icon: "text-success"
     },
-    saving: {
+    info: {
       badge: "border-info/40 bg-info/10 text-info",
       icon: "text-info"
-    },
-    saved: {
-      badge: "border-success/40 bg-success/10 text-success",
-      icon: "text-success"
     },
     error: {
       badge: "border-error/40 bg-error/10 text-error",
@@ -31,42 +28,95 @@
     }
   };
 
-  const tooltipByKind: Record<SaveStatus["kind"], string> = {
-    idle: localSaveTooltip,
-    saving: localSaveTooltip,
-    saved: localSaveTooltip,
-    error: errorTooltip
+  type StatusConfig = {
+    tone: ToneToken;
+    tooltip: string;
+    isSaving?: boolean;
   };
 
+  const STATUS_CONFIG: Record<SaveStatus["kind"], StatusConfig> = {
+    idle: { tone: "success", tooltip: LOCAL_SAVE_TOOLTIP },
+    saving: { tone: "info", tooltip: LOCAL_SAVE_TOOLTIP, isSaving: true },
+    saved: { tone: "success", tooltip: LOCAL_SAVE_TOOLTIP },
+    error: { tone: "error", tooltip: ERROR_TOOLTIP }
+  };
+
+  const FALLBACK_STATUS_CONFIG = STATUS_CONFIG.saved;
+
+  type IndicatorState = {
+    kind: SaveStatus["kind"];
+    label: string;
+    tone: ToneClasses;
+    tooltip: string;
+    badgeClasses: string;
+    formattedTimestamp?: string;
+    ariaLabel: string;
+  };
+
+  function buildBadgeClasses(baseClasses: string, isSaving: boolean): string {
+    return ["indicator", baseClasses, isSaving ? "indicator--saving animate-pulse" : ""].filter(Boolean).join(" ");
+  }
+
+  function formatSavedTimestamp(status: SaveStatus): string | undefined {
+    if (status.kind !== "saved" || status.timestamp == null) {
+      return undefined;
+    }
+
+    const date = new Date(status.timestamp);
+    return Number.isNaN(date.valueOf()) ? undefined : date.toLocaleTimeString();
+  }
+
+  function buildTooltipMessage(base: string, formattedTimestamp?: string): string {
+    return formattedTimestamp ? `${base}\nLast saved at ${formattedTimestamp}.` : base;
+  }
+
+  function buildAriaLabel(label: string, tooltip: string): string {
+    return `${label}. ${tooltip}`;
+  }
+
+  function resolveIndicatorState(status: SaveStatus): IndicatorState {
+    const config = STATUS_CONFIG[status.kind] ?? FALLBACK_STATUS_CONFIG;
+    const tone = TONE_CLASSES[config.tone];
+    const formattedTimestamp = formatSavedTimestamp(status);
+    const tooltip = buildTooltipMessage(config.tooltip, formattedTimestamp);
+    const isSaving = Boolean(config.isSaving && status.kind === "saving");
+
+    return {
+      kind: status.kind,
+      label: status.message,
+      tone,
+      tooltip,
+      badgeClasses: buildBadgeClasses(tone.badge, isSaving),
+      formattedTimestamp,
+      ariaLabel: buildAriaLabel(status.message, tooltip)
+    };
+  }
+
   $: status = $saveStatus;
-  $: statusLabel = status.message;
-  $: tone = toneByKind[status.kind] ?? toneByKind.saved;
-  $: lastSavedAt = status.timestamp && status.kind === "saved" ? new Date(status.timestamp) : undefined;
-  $: formattedTimestamp = lastSavedAt?.toLocaleTimeString();
-  $: tooltipBase = tooltipByKind[status.kind] ?? localSaveTooltip;
-  $: tooltipMessage = formattedTimestamp ? `${tooltipBase}\nLast saved at ${formattedTimestamp}.` : tooltipBase;
-  $: badgeClasses = ["indicator", tone.badge, status.kind === "saving" ? "indicator--saving animate-pulse" : ""]
-    .filter(Boolean)
-    .join(" ");
+  $: indicatorState = resolveIndicatorState(status);
 </script>
 
-<div class="indicator-tooltip tooltip tooltip-bottom" data-tip={tooltipMessage} data-testid="save-indicator-tooltip">
+<div
+  class="indicator-tooltip tooltip tooltip-bottom"
+  data-tip={indicatorState.tooltip}
+  data-testid="save-indicator-tooltip"
+>
   <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
   <span
-    class={badgeClasses}
-    data-kind={status.kind}
+    class={indicatorState.badgeClasses}
+    data-kind={indicatorState.kind}
     data-testid="save-indicator"
     aria-live="polite"
     role="status"
-    title={tooltipMessage}
-    aria-label={`${statusLabel}. ${tooltipMessage}`}
+    title={indicatorState.tooltip}
+    aria-label={indicatorState.ariaLabel}
     tabindex="0"
   >
-    <SaveIndicatorIcon kind={status.kind} toneClass={tone.icon} />
-    <span class="indicator__label" data-testid="save-indicator-label">{statusLabel}</span>
-    {#if formattedTimestamp}
+    <SaveIndicatorIcon kind={indicatorState.kind} toneClass={indicatorState.tone.icon} />
+    <span class="indicator__label" data-testid="save-indicator-label">{indicatorState.label}</span>
+    {#if indicatorState.formattedTimestamp}
       <span class="indicator__timestamp" data-testid="save-indicator-timestamp">
-        ({formattedTimestamp})
+        ({indicatorState.formattedTimestamp})
       </span>
     {/if}
   </span>
