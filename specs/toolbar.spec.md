@@ -125,9 +125,9 @@ the workspace.
 - Layout class tokens and testing IDs are centralized in
   `toolbar.constants.ts`, keeping styling, instrumentation, and tests aligned
   without string duplication inside the Svelte markup. Unit tests import these
-  exported strings directly so assertions never drift from implementation
+  exported identifiers directly so assertions never drift from implementation
   details.
-- `TOOLBAR_TEST_IDS` expose stable selectors so unit tests can target
+- `ToolbarTestId` exposes stable selectors so unit tests can target
   high-level clusters without depending on specific DOM structures. Tests also
   rely on `ShellLayout`, `ViewMode`, and `PanelId` enums when manipulating shell
   stores, eliminating untyped string literals that obscure intent during future
