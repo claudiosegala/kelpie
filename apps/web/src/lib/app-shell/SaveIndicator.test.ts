@@ -17,7 +17,8 @@ describe("SaveIndicator", () => {
   it("renders idle state with local save guidance", () => {
     render(SaveIndicator);
 
-    const indicator = screen.getByLabelText(/Saved locally/);
+    const indicator = screen.getByTestId("save-indicator");
+    expect(indicator).toHaveAccessibleName(/Saved locally/);
     expect(indicator).toHaveAttribute("data-kind", "idle");
     expect(indicator).toHaveAttribute("title", localTooltip);
     expect(within(indicator).getByText("Saved locally ✓")).toBeVisible();
@@ -32,7 +33,8 @@ describe("SaveIndicator", () => {
     markSaving();
     await tick();
 
-    const indicator = screen.getByLabelText(/Saving locally/);
+    const indicator = screen.getByTestId("save-indicator");
+    expect(indicator).toHaveAccessibleName(/Saving locally/);
     expect(indicator).toHaveAttribute("data-kind", "saving");
     expect(indicator).toHaveAttribute("title", localTooltip);
     const label = within(indicator).getByText("Saving locally…");
@@ -49,7 +51,8 @@ describe("SaveIndicator", () => {
     markSaved();
     await tick();
 
-    const indicator = screen.getByLabelText(/Saved locally/);
+    const indicator = screen.getByTestId("save-indicator");
+    expect(indicator).toHaveAccessibleName(/Saved locally/);
     expect(indicator).toHaveAttribute("data-kind", "saved");
     const timestamp = within(indicator).getByText(/\(.+:.+\)/);
     expect(timestamp.textContent).toMatch(/^\(.+\)$/);
@@ -61,7 +64,8 @@ describe("SaveIndicator", () => {
     markError(new Error("Disk full"));
     await tick();
 
-    const indicator = screen.getByLabelText(/Disk full/);
+    const indicator = screen.getByTestId("save-indicator");
+    expect(indicator).toHaveAccessibleName(/Disk full/);
     expect(indicator).toHaveAttribute("data-kind", "error");
     expect(indicator).toHaveAttribute("title", errorTooltip);
     expect(within(indicator).getByText("Disk full")).toBeVisible();
