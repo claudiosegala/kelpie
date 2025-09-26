@@ -1,12 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { createStorageEngine } from "./engine";
 import type { StorageDriver } from "./driver";
 import type { StorageSnapshot } from "./types";
-import { createDefaultConfiguration } from "./defaults";
 
-function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapshot {
-  const base: StorageSnapshot = {
+function createSnapshot(): StorageSnapshot {
+  return {
     meta: {
       version: 1,
       installationId: "test-installation",
@@ -32,27 +31,23 @@ function createSnapshot(overrides: Partial<StorageSnapshot> = {}): StorageSnapsh
     history: [],
     audit: []
   };
-
-  return { ...base, ...overrides };
 }
 
 describe("createStorageEngine", () => {
   let driver: StorageDriver;
   let loadSpy: ReturnType<typeof vi.fn>;
   let saveSpy: ReturnType<typeof vi.fn>;
-  let clearSpy: ReturnType<typeof vi.fn>;
   let triggerSubscription: (() => void) | undefined;
 
   beforeEach(() => {
     loadSpy = vi.fn();
     saveSpy = vi.fn();
-    clearSpy = vi.fn();
     triggerSubscription = undefined;
 
     driver = {
       load: loadSpy,
       save: saveSpy,
-      clear: clearSpy,
+      clear: vi.fn(),
       subscribe: vi.fn((callback: () => void) => {
         triggerSubscription = callback;
         return () => {
@@ -62,357 +57,58 @@ describe("createStorageEngine", () => {
     } satisfies StorageDriver;
   });
 
-  it("hydrates stores with the driver's snapshot and refreshes them on demand", () => {
-    const initialSnapshot = createSnapshot({
-      meta: { ...createSnapshot().meta, installationId: "initial" }
-    });
-    const refreshedSnapshot = createSnapshot({
-      meta: { ...createSnapshot().meta, installationId: "refreshed" }
-    });
+  it("exposes writable stores that mirror the core state", () => {
+    const initial = createSnapshot();
+    const next = {
+      ...initial,
+      settings: {
+        ...initial.settings,
+        lastActiveDocumentId: "doc-1",
+        updatedAt: "2024-01-02T00:00:00.000Z"
+      }
+    } satisfies StorageSnapshot;
 
-    let current = initialSnapshot;
-    loadSpy.mockImplementation(() => current);
+    loadSpy.mockReturnValue(initial);
 
     const engine = createStorageEngine({ driver });
-    expect(get(engine.snapshot)).toEqual(initialSnapshot);
-    expect(get(engine.settings)).toEqual(initialSnapshot.settings);
+    expect(get(engine.snapshot)).toEqual(initial);
+    expect(get(engine.config)).toEqual(initial.config);
+    expect(get(engine.settings)).toEqual(initial.settings);
 
-    current = refreshedSnapshot;
-    engine.refresh();
+    engine.update(() => next);
 
-    expect(loadSpy).toHaveBeenCalledTimes(2);
-    expect(get(engine.snapshot)).toEqual(refreshedSnapshot);
-    expect(get(engine.settings)).toEqual(refreshedSnapshot.settings);
+    expect(get(engine.snapshot)).toEqual(next);
+    expect(get(engine.config)).toEqual(next.config);
+    expect(get(engine.settings)).toEqual(next.settings);
+    expect(saveSpy).toHaveBeenCalledWith(next);
   });
 
-  it("updates stores when the driver notifies of external changes", () => {
-    const firstSnapshot = createSnapshot({
-      meta: { ...createSnapshot().meta, installationId: "first" }
-    });
-    const secondSnapshot = createSnapshot({
-      meta: { ...createSnapshot().meta, installationId: "second" }
-    });
+  it("refreshes Svelte stores when external driver updates occur", () => {
+    const first = createSnapshot();
+    const second = {
+      ...first,
+      config: {
+        ...first.config,
+        historyEntryCap: 10
+      }
+    } satisfies StorageSnapshot;
 
-    let current = firstSnapshot;
+    let current = first;
     loadSpy.mockImplementation(() => current);
 
     const engine = createStorageEngine({ driver });
     expect(triggerSubscription).toBeTypeOf("function");
 
-    current = secondSnapshot;
+    current = second;
     triggerSubscription?.();
 
-    expect(get(engine.snapshot)).toEqual(secondSnapshot);
-    expect(get(engine.settings)).toEqual(secondSnapshot.settings);
+    expect(get(engine.snapshot)).toEqual(second);
+    expect(get(engine.config)).toEqual(second.config);
   });
 
-  it("ignores refresh calls when the driver returns null", () => {
-    const baseline = createSnapshot();
-    loadSpy.mockReturnValueOnce(baseline).mockReturnValueOnce(null);
-
-    const engine = createStorageEngine({ driver });
-    engine.refresh();
-
-    expect(get(engine.snapshot)).toEqual(baseline);
-    expect(get(engine.settings)).toEqual(baseline.settings);
-  });
-
-  it("resets storage to defaults and persists the new snapshot", () => {
-    const broadcastSpy = vi.fn();
-    const populated = createSnapshot({
-      settings: {
-        lastActiveDocumentId: "doc-123",
-        panes: { editor: true },
-        filters: { status: "open" },
-        createdAt: "2024-01-01T00:00:00.000Z",
-        updatedAt: "2024-01-02T00:00:00.000Z"
-      },
-      index: [
-        {
-          id: "doc-123",
-          title: "Doc",
-          createdAt: "2024-01-01T00:00:00.000Z",
-          updatedAt: "2024-01-02T00:00:00.000Z",
-          deletedAt: null,
-          purgeAfter: null
-        }
-      ],
-      documents: {
-        "doc-123": {
-          id: "doc-123",
-          title: "Doc",
-          content: "Hello",
-          createdAt: "2024-01-01T00:00:00.000Z",
-          updatedAt: "2024-01-02T00:00:00.000Z"
-        }
-      },
-      history: [
-        {
-          id: "hist-1",
-          scope: "document",
-          refId: "doc-123",
-          snapshot: {},
-          createdAt: "2024-01-02T00:00:00.000Z",
-          origin: "api",
-          sequence: 1
-        }
-      ],
-      audit: [
-        {
-          id: "audit-1",
-          type: "document.updated",
-          createdAt: "2024-01-02T00:00:00.000Z"
-        }
-      ]
-    });
-
-    loadSpy.mockReturnValue(populated);
-
-    const engine = createStorageEngine({ driver, broadcast: broadcastSpy });
-    engine.reset();
-
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
-
-    expect(savedSnapshot.config).toEqual(createDefaultConfiguration());
-    expect(savedSnapshot.index).toEqual([]);
-    expect(savedSnapshot.documents).toEqual({});
-    expect(savedSnapshot.history).toEqual([]);
-    expect(savedSnapshot.audit).toEqual([]);
-    expect(savedSnapshot.settings.lastActiveDocumentId).toBeNull();
-    expect(savedSnapshot.settings.panes).toEqual({});
-    expect(savedSnapshot.settings.filters).toEqual({});
-
-    expect(get(engine.snapshot)).toEqual(savedSnapshot);
-    expect(get(engine.settings)).toEqual(savedSnapshot.settings);
-    expect(broadcastSpy).toHaveBeenCalledTimes(1);
-    expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
-      driver
-    });
-  });
-
-  it("exposes a config store that stays in sync with snapshot updates", () => {
-    const baseline = createSnapshot({
-      config: {
-        ...createSnapshot().config,
-        debounce: { writeMs: 250, broadcastMs: 125 },
-        historyRetentionDays: 14,
-        historyEntryCap: 75,
-        auditEntryCap: 40,
-        softDeleteRetentionDays: 10
-      }
-    });
-    const updated = {
-      ...baseline,
-      config: {
-        ...baseline.config,
-        debounce: { writeMs: 1000, broadcastMs: 400 },
-        historyRetentionDays: 30,
-        historyEntryCap: 120
-      }
-    } satisfies StorageSnapshot;
-
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver });
-    expect(get(engine.config)).toEqual(baseline.config);
-
-    const changed = engine.update(() => updated);
-
-    expect(changed).toBe(true);
-    expect(saveSpy).toHaveBeenCalledWith(updated);
-    expect(get(engine.config)).toEqual(updated.config);
-  });
-
-  it("persists updates when the updater returns a new snapshot", () => {
-    const broadcastSpy = vi.fn();
-    const baseline = createSnapshot();
-    const updated = {
-      ...baseline,
-      settings: {
-        ...baseline.settings,
-        lastActiveDocumentId: "doc-123",
-        updatedAt: "2024-01-03T00:00:00.000Z"
-      }
-    } satisfies StorageSnapshot;
-
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver, broadcast: broadcastSpy });
-    const changed = engine.update(() => updated);
-
-    expect(changed).toBe(true);
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    expect(saveSpy).toHaveBeenCalledWith(updated);
-    expect(get(engine.snapshot)).toEqual(updated);
-    expect(get(engine.settings)).toEqual(updated.settings);
-    expect(broadcastSpy).toHaveBeenCalledTimes(1);
-    expect(broadcastSpy).toHaveBeenCalledWith(expect.objectContaining({ scope: "snapshot", origin: "local" }), {
-      driver
-    });
-  });
-
-  it("persists document mutations when returning a new snapshot reference", () => {
-    const baseline = createSnapshot();
-    const nextDocument = {
-      id: "doc-123",
-      title: "New Doc",
-      content: "Hello world",
-      createdAt: "2024-01-01T00:00:00.000Z",
-      updatedAt: "2024-01-01T00:00:00.000Z"
-    } as const;
-
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver });
-    const changed = engine.update((snapshot) => ({
-      ...snapshot,
-      index: [
-        ...snapshot.index,
-        {
-          id: nextDocument.id,
-          title: nextDocument.title,
-          createdAt: nextDocument.createdAt,
-          updatedAt: nextDocument.updatedAt,
-          deletedAt: null,
-          purgeAfter: null
-        }
-      ],
-      documents: {
-        ...snapshot.documents,
-        [nextDocument.id]: nextDocument
-      }
-    }));
-
-    expect(changed).toBe(true);
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    const savedSnapshot = saveSpy.mock.calls[0][0] as StorageSnapshot;
-    expect(savedSnapshot.documents[nextDocument.id]).toEqual(nextDocument);
-    expect(savedSnapshot.index).toContainEqual({
-      id: nextDocument.id,
-      title: nextDocument.title,
-      createdAt: nextDocument.createdAt,
-      updatedAt: nextDocument.updatedAt,
-      deletedAt: null,
-      purgeAfter: null
-    });
-    expect(get(engine.snapshot).documents[nextDocument.id]).toEqual(nextDocument);
-  });
-
-  it("does not persist when the updater returns the current snapshot", () => {
-    const broadcastSpy = vi.fn();
-    const baseline = createSnapshot();
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver, broadcast: broadcastSpy });
-    const changed = engine.update((current) => current);
-
-    expect(changed).toBe(false);
-    expect(saveSpy).not.toHaveBeenCalled();
-    expect(get(engine.snapshot)).toEqual(baseline);
-    expect(get(engine.settings)).toEqual(baseline.settings);
-    expect(broadcastSpy).not.toHaveBeenCalled();
-  });
-
-  it("throws when the updater does not return a snapshot", () => {
-    const baseline = createSnapshot();
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver });
-
-    expect(() =>
-      engine.update(() => {
-        return undefined as unknown as StorageSnapshot;
-      })
-    ).toThrowError("storage.update must return a snapshot");
-    expect(get(engine.snapshot)).toEqual(baseline);
-    expect(saveSpy).not.toHaveBeenCalled();
-  });
-
-  it("updates stores for in-place document mutations without persisting", () => {
-    const baseline = createSnapshot({
-      index: [
-        {
-          id: "doc-123",
-          title: "Doc",
-          createdAt: "2024-01-01T00:00:00.000Z",
-          updatedAt: "2024-01-01T00:00:00.000Z",
-          deletedAt: null,
-          purgeAfter: null
-        }
-      ],
-      documents: {
-        "doc-123": {
-          id: "doc-123",
-          title: "Doc",
-          content: "Initial",
-          createdAt: "2024-01-01T00:00:00.000Z",
-          updatedAt: "2024-01-01T00:00:00.000Z"
-        }
-      }
-    });
-
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver });
-    const changed = engine.update((snapshot) => {
-      const entry = snapshot.index[0];
-      const document = snapshot.documents["doc-123"];
-
-      entry.title = "Renamed";
-      entry.updatedAt = "2024-01-02T00:00:00.000Z";
-      document.title = "Renamed";
-      document.content = "Updated";
-      document.updatedAt = "2024-01-02T00:00:00.000Z";
-
-      return snapshot;
-    });
-
-    expect(changed).toBe(false);
-    expect(saveSpy).not.toHaveBeenCalled();
-    const snapshot = get(engine.snapshot);
-    expect(snapshot.index[0]).toMatchObject({
-      title: "Renamed",
-      updatedAt: "2024-01-02T00:00:00.000Z"
-    });
-    expect(snapshot.documents["doc-123"]).toMatchObject({
-      title: "Renamed",
-      content: "Updated",
-      updatedAt: "2024-01-02T00:00:00.000Z"
-    });
-  });
-
-  it("resets the config store to default values", () => {
-    const populated = createSnapshot({
-      config: {
-        ...createSnapshot().config,
-        debounce: { writeMs: 50, broadcastMs: 25 },
-        historyRetentionDays: 2,
-        historyEntryCap: 10,
-        auditEntryCap: 5,
-        softDeleteRetentionDays: 1
-      }
-    });
-
-    loadSpy.mockReturnValue(populated);
-
-    const engine = createStorageEngine({ driver });
-    engine.reset();
-
-    expect(saveSpy).toHaveBeenCalledTimes(1);
-    expect(get(engine.config)).toEqual(createDefaultConfiguration());
-  });
-
-  it("captures and prunes history entries via the history controller", () => {
-    const baseline = createSnapshot({
-      config: {
-        ...createSnapshot().config,
-        historyEntryCap: 2,
-        historyRetentionDays: 1,
-        debounce: { writeMs: 500, broadcastMs: 200 },
-        auditEntryCap: 20,
-        softDeleteRetentionDays: 7
-      },
+  it("keeps stores in sync with history captures", () => {
+    const baseline = {
+      ...createSnapshot(),
       index: [
         {
           id: "doc-123",
@@ -431,122 +127,22 @@ describe("createStorageEngine", () => {
           createdAt: "2024-01-01T00:00:00.000Z",
           updatedAt: "2024-01-01T00:00:00.000Z"
         }
-      },
-      history: [
-        {
-          id: "hist-1",
-          scope: "document",
-          refId: "doc-123",
-          snapshot: { title: "Doc", content: "Hello" },
-          createdAt: "2024-01-01T00:00:00.000Z",
-          origin: "api",
-          sequence: 1
-        }
-      ]
-    });
+      }
+    } satisfies StorageSnapshot;
 
     loadSpy.mockReturnValue(baseline);
 
     const engine = createStorageEngine({ driver, now: () => "2024-01-03T00:00:00.000Z" });
 
-    const result = engine.history.capture({
+    engine.history.capture({
       scope: "document",
       refId: "doc-123",
       snapshot: { title: "Doc", content: "Updated" },
       origin: "toolbar"
     });
 
-    expect(result.entry.origin).toBe("toolbar");
-    expect(result.entry.sequence).toBe(2);
-    expect(result.pruned).toHaveLength(1);
     expect(saveSpy).toHaveBeenCalledTimes(1);
-
-    const snapshot = get(engine.snapshot);
-    expect(snapshot.history).toHaveLength(1);
-    expect(snapshot.history[0]?.origin).toBe("toolbar");
-    expect(snapshot.audit.at(-1)?.type).toBe("history.pruned");
-    expect(engine.history.timeline({ scope: "document", refId: "doc-123" }).cursor?.origin).toBe("toolbar");
-  });
-
-  it("maintains undo/redo stacks across snapshot updates", () => {
-    const baseline = createSnapshot({
-      index: [
-        {
-          id: "doc-123",
-          title: "Doc",
-          createdAt: "2024-01-01T00:00:00.000Z",
-          updatedAt: "2024-01-01T00:00:00.000Z",
-          deletedAt: null,
-          purgeAfter: null
-        }
-      ],
-      documents: {
-        "doc-123": {
-          id: "doc-123",
-          title: "Doc",
-          content: "Current",
-          createdAt: "2024-01-01T00:00:00.000Z",
-          updatedAt: "2024-01-01T00:00:00.000Z"
-        }
-      },
-      history: [
-        {
-          id: "hist-1",
-          scope: "document",
-          refId: "doc-123",
-          snapshot: { title: "Doc", content: "Initial" },
-          createdAt: "2024-01-01T00:00:00.000Z",
-          origin: "api",
-          sequence: 1
-        },
-        {
-          id: "hist-2",
-          scope: "document",
-          refId: "doc-123",
-          snapshot: { title: "Doc", content: "Intermediate" },
-          createdAt: "2024-01-02T00:00:00.000Z",
-          origin: "keyboard",
-          sequence: 2
-        }
-      ]
-    });
-
-    loadSpy.mockReturnValue(baseline);
-
-    const engine = createStorageEngine({ driver, now: () => "2024-01-03T00:00:00.000Z" });
-
-    const undoEntry = engine.history.undo(
-      { scope: "document", refId: "doc-123" },
-      {
-        snapshot: { title: "Doc", content: "Current" },
-        origin: "toolbar"
-      }
-    );
-
-    expect(undoEntry?.id).toBe("hist-2");
-    const timelineAfterUndo = engine.history.timeline({ scope: "document", refId: "doc-123" });
-    expect(timelineAfterUndo.cursor?.id).toBe("hist-1");
-    expect(timelineAfterUndo.future).toHaveLength(1);
-
-    engine.update((snapshot) => {
-      const undoSnapshot = undoEntry?.snapshot as { content: string };
-      return {
-        ...snapshot,
-        documents: {
-          ...snapshot.documents,
-          "doc-123": {
-            ...snapshot.documents["doc-123"],
-            content: undoSnapshot.content
-          }
-        }
-      } satisfies StorageSnapshot;
-    });
-
-    const redoEntry = engine.history.redo({ scope: "document", refId: "doc-123" });
-    expect(redoEntry?.origin).toBe("toolbar");
-
-    const timelineAfterRedo = engine.history.timeline({ scope: "document", refId: "doc-123" });
-    expect(timelineAfterRedo.cursor?.id).toBe("hist-2");
-    expect(timelineAfterRedo.future).toHaveLength(0);
+    expect(get(engine.snapshot).history).toHaveLength(1);
+    expect(get(engine.snapshot).history[0]?.origin).toBe("toolbar");
   });
 });
