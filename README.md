@@ -59,39 +59,7 @@ pnpm test
 
 The development server defaults to `http://localhost:5173`. Vite provides hot module reloading, so edits to the app reflect immediately in the browser.
 
-## 🧰 VS Code Setup
-
-Kelpie's toolchain is optimized for Visual Studio Code. Install the extensions below so linting, formatting, and specs all run consistently while you edit:
-
-| Area              | Extension                                                                                                               | Identifier                         |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| Svelte/TypeScript | [Svelte for VS Code](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode)                          | `svelte.svelte-vscode`             |
-| Linting           | [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)                                    | `dbaeumer.vscode-eslint`           |
-| Formatting        | [Prettier – Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)                 | `esbenp.prettier-vscode`           |
-| Styling           | [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss)              | `bradlc.vscode-tailwindcss`        |
-| Styling           | [PostCSS Language Support](https://marketplace.visualstudio.com/items?itemName=csstools.postcss)                        | `csstools.postcss`                 |
-| Testing           | [Vitest Explorer](https://marketplace.visualstudio.com/items?itemName=ZixuanChen.vitest-explorer)                       | `ZixuanChen.vitest-explorer`       |
-| Testing           | [Playwright Test for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-playwright.playwright)             | `ms-playwright.playwright`         |
-| BDD Specs         | [Cucumber (Gherkin) Full Support](https://marketplace.visualstudio.com/items?itemName=alexkrechik.cucumberautocomplete) | `alexkrechik.cucumberautocomplete` |
-| Docs              | [Markdown All in One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one)                   | `yzhang.markdown-all-in-one`       |
-| Docs              | [GitHub Markdown Preview](https://marketplace.visualstudio.com/items?itemName=bierner.github-markdown-preview)          | `bierner.github-markdown-preview`  |
-
-Install them quickly with:
-
-```bash
-code --install-extension svelte.svelte-vscode \
-  dbaeumer.vscode-eslint \
-  esbenp.prettier-vscode \
-  bradlc.vscode-tailwindcss \
-  csstools.postcss \
-  ZixuanChen.vitest-explorer \
-  ms-playwright.playwright \
-  alexkrechik.cucumberautocomplete \
-  yzhang.markdown-all-in-one \
-  bierner.github-markdown-preview
-```
-
-> Tip: Kelpie includes a `.vscode/extensions.json` file with these recommendations so VS Code will prompt collaborators to install them automatically.
+For editor setup details—including the recommended VS Code extensions—see the ["VS Code setup"](./CONTRIBUTING.md#-vs-code-setup) section of `CONTRIBUTING.md`.
 
 ## 📝 Markdown Syntax Cheatsheet
 
