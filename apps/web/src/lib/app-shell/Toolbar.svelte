@@ -31,7 +31,7 @@
   function viewButtonClasses(id: ViewMode): string {
     const isActive = $shellState.viewMode === id;
     return [
-      "dock-item btn btn-sm btn-circle border border-transparent bg-transparent text-base-content/70 transition-all duration-200",
+      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-transparent text-base-content/70 transition-all duration-200",
       isActive
         ? "btn-primary text-primary-content shadow-sm"
         : "hover:border-base-300 hover:bg-base-200/60 hover:text-base-content"
@@ -42,7 +42,7 @@
     const isActive = $shellState.activePanel === id;
     const disabled = !isPanelAllowedInMode(id, $shellState.viewMode);
     return [
-      "dock-item btn btn-xs sm:btn-sm btn-circle border border-transparent bg-transparent text-base-content/70 transition-all duration-200",
+      "dock-item btn btn-sm sm:btn-md btn-circle border border-transparent bg-transparent text-base-content/70 transition-all duration-200",
       isActive
         ? "btn-secondary text-secondary-content shadow-sm"
         : "hover:border-base-300 hover:bg-base-200/60 hover:text-base-content",
@@ -57,46 +57,19 @@
   }
 </script>
 
-<header class="navbar sticky top-0 z-30 border-b border-base-300/70 bg-base-100/95 px-4 backdrop-blur">
-  <div class="navbar-start flex items-center gap-3 py-3">
-    <div class="min-w-[10rem] sm:w-auto">
-      <SaveIndicator />
-    </div>
-    <button
-      type="button"
-      class="btn btn-circle btn-sm border border-base-300/60 bg-base-100/80 text-base-content shadow-sm hover:border-primary/40"
-      on:click={toggleTheme}
-      aria-label={nextThemeLabel()}
-      title={nextThemeLabel()}
-    >
-      {#if $theme === "light"}
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
-          <circle cx="12" cy="12" r="4" stroke-width="1.5" />
-          <path
-            stroke-width="1.5"
-            d="M12 2.75v2.5m0 13.5v2.5M4.75 12h-2.5m19.5 0h-2.5M6.3 6.3l-1.77-1.77m14.94 14.94-1.77-1.77m0-11.4 1.77-1.77M6.3 17.7l-1.77 1.77"
-          />
-        </svg>
-      {:else}
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
-          <path stroke-width="1.5" d="M19.28 15.56A8 8 0 0 1 8.44 4.72 7.25 7.25 0 1 0 19.28 15.56Z" />
-        </svg>
-      {/if}
-    </button>
-  </div>
-
-  <div class="navbar-center flex flex-1 items-center justify-center py-3">
+<header class="navbar sticky top-0 z-30 border-b border-base-300/70 bg-base-100/95 px-3 py-2 backdrop-blur">
+  <div class="navbar-start flex items-center gap-3">
     <div
       class="tooltip tooltip-bottom"
       data-tip={`Kelpie ${version}\nMarkdown to-do studio — edit, preview, and fine-tune your flow.`}
     >
-      <span class="text-xl font-black tracking-tight text-primary sm:text-2xl">Kelpie</span>
+      <span class="text-lg font-black tracking-tight text-primary sm:text-xl">Kelpie</span>
     </div>
   </div>
 
-  <div class="navbar-end flex items-center gap-3 py-3">
+  <div class="navbar-center flex flex-1 items-center justify-center">
     <div
-      class="dock items-center gap-1 rounded-full border border-base-300/70 bg-base-100/70 px-1 py-1 shadow-sm"
+      class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
       role="group"
       aria-label="Select workspace mode"
     >
@@ -139,21 +112,24 @@
               stroke="currentColor"
               class="h-4 w-4"
             >
-              <circle cx="12" cy="12" r="3" stroke-width="1.5" />
-              <path stroke-width="1.5" d="M4.5 12a7.5 7.5 0 0 1 1.53-4.53L3 4.5l2.5-2.5 3 3A7.5 7.5 0 0 1 12 4.5" />
               <path
                 stroke-width="1.5"
-                d="M19.5 12a7.5 7.5 0 0 1-1.53 4.53l3.03 3.03-2.5 2.5-3.03-3.03A7.5 7.5 0 0 1 12 19.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m12 4.75 1.28.74a1 1 0 0 0 1.46-.54l.42-1.43 2.06.6-.06 1.5a1 1 0 0 0 .86 1.02l1.47.23-.32 2.13-1.42.23a1 1 0 0 0-.83 1.17l.27 1.45-1.97.9-.8-1.22a1 1 0 0 0-1.32-.32l-1.28.74-1.28-.74a1 1 0 0 0-1.46.54l-.42 1.43-2.06-.6.06-1.5a1 1 0 0 0-.86-1.02l-1.47-.23.32-2.13 1.42-.23a1 1 0 0 0 .83-1.17l-.27-1.45 1.97-.9.8 1.22a1 1 0 0 0 1.32.32Z"
               />
+              <circle cx="12" cy="12" r="2.25" stroke-width="1.5" />
             </svg>
           {/if}
         </button>
       {/each}
     </div>
+  </div>
 
+  <div class="navbar-end flex items-center gap-2">
     {#if $shellState.layout === "mobile"}
       <div
-        class="dock items-center gap-1 rounded-full border border-base-300/70 bg-base-100/70 px-1 py-1 shadow-sm"
+        class="dock flex flex-row items-center gap-2 rounded-full border border-base-300/70 bg-base-100/70 px-2 py-1.5 shadow-sm"
         role="group"
         aria-label="Select active panel"
       >
@@ -197,20 +173,44 @@
                 stroke="currentColor"
                 class="h-3.5 w-3.5"
               >
-                <circle cx="12" cy="12" r="3" stroke-width="1.5" />
                 <path
                   stroke-width="1.5"
-                  d="M19.5 12a7.5 7.5 0 0 1-1.53 4.53l3.03 3.03-2.5 2.5-3.03-3.03A7.5 7.5 0 0 1 12 19.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m12 4.75 1.28.74a1 1 0 0 0 1.46-.54l.42-1.43 2.06.6-.06 1.5a1 1 0 0 0 .86 1.02l1.47.23-.32 2.13-1.42.23a1 1 0 0 0-.83 1.17l.27 1.45-1.97.9-.8-1.22a1 1 0 0 0-1.32-.32l-1.28.74-1.28-.74a1 1 0 0 0-1.46.54l-.42 1.43-2.06-.6.06-1.5a1 1 0 0 0-.86-1.02l-1.47-.23.32-2.13 1.42-.23a1 1 0 0 0 .83-1.17l-.27-1.45 1.97-.9.8 1.22a1 1 0 0 0 1.32.32Z"
                 />
-                <path
-                  stroke-width="1.5"
-                  d="M4.5 12a7.5 7.5 0 0 1 1.53-4.53L3 4.5l2.5-2.5 3.03 3.03A7.5 7.5 0 0 1 12 4.5"
-                />
+                <circle cx="12" cy="12" r="2.25" stroke-width="1.5" />
               </svg>
             {/if}
           </button>
         {/each}
       </div>
     {/if}
+
+    <div class="min-w-[9.5rem] sm:w-auto">
+      <SaveIndicator />
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-circle btn-sm border border-base-300/60 bg-base-100/80 text-base-content shadow-sm sm:btn-md hover:border-primary/40"
+      on:click={toggleTheme}
+      aria-label={nextThemeLabel()}
+      title={nextThemeLabel()}
+    >
+      {#if $theme === "light"}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
+          <circle cx="12" cy="12" r="4" stroke-width="1.5" />
+          <path
+            stroke-width="1.5"
+            d="M12 2.75v2.5m0 13.5v2.5M4.75 12h-2.5m19.5 0h-2.5M6.3 6.3l-1.77-1.77m14.94 14.94-1.77-1.77m0-11.4 1.77-1.77M6.3 17.7l-1.77 1.77"
+          />
+        </svg>
+      {:else}
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-4 w-4">
+          <path stroke-width="1.5" d="M19.28 15.56A8 8 0 0 1 8.44 4.72 7.25 7.25 0 1 0 19.28 15.56Z" />
+        </svg>
+      {/if}
+    </button>
   </div>
 </header>

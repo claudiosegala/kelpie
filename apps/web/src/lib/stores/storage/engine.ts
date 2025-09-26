@@ -48,6 +48,7 @@ export type StorageEngine = {
 export type StorageEngineOptions = {
   driver?: StorageDriver;
   now?: () => IsoDateTimeString;
+  broadcast?: (broadcast: StorageBroadcast, options?: { driver?: StorageDriver }) => void;
 };
 
 const BROADCAST_CHANNEL_NAME = "kelpie.storage.broadcast";
@@ -136,6 +137,7 @@ function emitViaStorageEvent(broadcast: StorageBroadcast): void {
  */
 export function createStorageEngine(options: StorageEngineOptions = {}): StorageEngine {
   const driver = options.driver ?? createLocalStorageDriver(STORAGE_KEY_ROOT);
+  const broadcast = options.broadcast ?? scheduleBroadcast;
   const initial = driver.load() ?? createInitialSnapshot();
 
   const now = options.now ?? (() => new Date().toISOString());
@@ -169,6 +171,14 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
     configStore.set(freshSnapshot.config);
     settingsStore.set(freshSnapshot.settings);
     historyCache = createHistoryCache(freshSnapshot);
+    broadcast(
+      {
+        scope: "snapshot",
+        updatedAt: new Date().toISOString(),
+        origin: "local"
+      },
+      { driver }
+    );
   }
 
   function update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean {
@@ -193,6 +203,17 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
 
     if (historyChanged) {
       historyCache = createHistoryCache(nextSnapshot);
+    }
+    
+    if (changed) {
+      broadcast(
+        {
+          scope: "snapshot",
+          updatedAt: new Date().toISOString(),
+          origin: "local"
+        },
+        { driver }
+      );
     }
 
     return changed;
