@@ -689,10 +689,14 @@ This section is for the AI or developers to update after implementation runs.
   - Quota-aware garbage collection that normalises snapshots on write, prunes
     expired documents, trims history for warning thresholds, and records payload
     size metadata alongside audit warnings
+  - Corruption recovery pipeline that falls back to defaults, rotates backups,
+    and records `storage.corruption` audit entries (§20)
+  - Resilient local storage driver with deterministic serialisation, checksum
+    validation, rotating backups, in-memory fallback, and quota-aware error
+    surfacing (§22–24)
 
 - **What remains to be implemented**:
-  - Migration pipeline, corruption recovery, and developer inspector tooling described in §§20–21.
-  - Driver resilience features (backups, fallbacks, quota errors) and telemetry instrumentation from §§22–24.
+  - Developer inspector tooling described in §21 and deeper telemetry hooks from §24.
   - Privacy toggles, encryption hooks, and compliance-aware audit policies from §25.
 
 - **Test files and coverage**:
