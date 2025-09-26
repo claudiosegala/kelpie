@@ -1,4 +1,4 @@
-import { readable, writable, type Readable } from "svelte/store";
+import { writable, type Readable } from "svelte/store";
 import { STORAGE_KEY_ROOT } from "./constants";
 import { createDefaultConfiguration, createInitialSnapshot } from "./defaults";
 import { createLocalStorageDriver, type StorageDriver } from "./driver";
@@ -17,7 +17,11 @@ export type StorageEngine = {
     refresh(): void;
     /** Resets storage to defaults, clearing existing data. */
     reset(): void;
-    /** Update functions are intentionally left unimplemented for follow-up tasks. */
+    /**
+     * Applies a mutation to the in-memory snapshot and persists it via the driver.
+     * Returns true when the snapshot reference changed (indicating a write occurred).
+     */
+    update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean;
 };
 
 export type StorageEngineOptions = {
@@ -35,13 +39,14 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
     const initial = driver.load() ?? createInitialSnapshot();
 
     const snapshotStore = writable<StorageSnapshot>(initial);
-    const configStore = readable(initial.config);
+    const configStore = writable<RuntimeConfiguration>(initial.config);
     const settingsStore = writable<UiSettings>(initial.settings);
 
     function refresh() {
         const next = driver.load();
         if (next) {
             snapshotStore.set(next);
+            configStore.set(next.config);
             settingsStore.set(next.settings);
         }
     }
@@ -53,7 +58,34 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
         };
         driver.save(freshSnapshot);
         snapshotStore.set(freshSnapshot);
+        configStore.set(freshSnapshot.config);
         settingsStore.set(freshSnapshot.settings);
+    }
+
+    function update(updater: (snapshot: StorageSnapshot) => StorageSnapshot): boolean {
+        let changed = false;
+        let nextSnapshot: StorageSnapshot | undefined;
+
+        snapshotStore.update((current) => {
+            const next = updater(current);
+            nextSnapshot = next;
+            if (next !== current) {
+                changed = true;
+            }
+            return next;
+        });
+
+        if (!nextSnapshot) {
+            throw new Error("storage.update must return a snapshot");
+        }
+
+        if (changed) {
+            driver.save(nextSnapshot);
+        }
+        configStore.set(nextSnapshot.config);
+        settingsStore.set(nextSnapshot.settings);
+
+        return changed;
     }
 
     driver.subscribe(() => {
@@ -65,7 +97,8 @@ export function createStorageEngine(options: StorageEngineOptions = {}): Storage
         config: configStore,
         settings: settingsStore,
         refresh,
-        reset
+        reset,
+        update
     };
 }
 
